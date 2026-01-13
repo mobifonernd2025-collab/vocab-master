@@ -84,8 +84,16 @@ def recognize_speech(audio_bytes):
 @st.cache_resource(ttl=60)
 def get_gspread_client():
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    creds = ServiceAccountCredentials.from_json_keyfile_name(JSON_FILE, scope)
-    return gspread.authorize(creds)
+    
+    # Thay vì đọc file JSON, ta đọc từ Secrets của Streamlit
+    # Mục [gcp_service_account] chính là cái bạn vừa dán vào Settings lúc nãy
+    try:
+        key_dict = dict(st.secrets["gcp_service_account"])
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(key_dict, scope)
+        return gspread.authorize(creds)
+    except Exception as e:
+        st.error(f"Lỗi đọc Secrets: {e}. Hãy kiểm tra lại mục Secrets trong Settings.")
+        return None
 
 def load_data():
     try:
