@@ -67,6 +67,7 @@ st.markdown(f"""
         font-size: 1.1rem !important;
     }}
 
+    /* Nút bấm */
     div.stButton > button {{ 
         height: 3.2em !important; 
         font-size: 18px !important; 
@@ -253,7 +254,7 @@ def handle_answer(selected_opt):
     if len(st.session_state.recent_history) > 5: st.session_state.recent_history.pop(0)
     generate_new_question()
 
-# --- GIAO DIỆN CHÍNH (ĐÃ CÁCH LY AUDIO VÀ NÚT) ---
+# --- GIAO DIỆN CHÍNH (FIX LỖI AUDIO ĐÈ NÚT) ---
 st.markdown(f'<h1 class="main-title">🌸 {st.session_state.get("selected_sheet_name", "Loading...")}</h1>', unsafe_allow_html=True)
 
 @st.fragment
@@ -281,23 +282,44 @@ def show_quiz_area():
     # Card Câu Hỏi
     st.markdown(f'<div class="main-card"><h1>{quiz["q"]}</h1></div>', unsafe_allow_html=True)
     
-    # AUDIO (Đã thêm margin-bottom để đẩy nút xuống)
-    col1, col2, col3 = st.columns([0.5, 9, 0.5]) 
-    with col2:
-        if st.session_state.get('current_audio_b64'):
-            unique_id = f"audio_{uuid.uuid4()}"
-            autoplay_attr = "autoplay" if auto_play else ""
-            # Thêm margin-bottom: 25px để không đè nút
-            html_audio = f"""
-                <div style="display: flex; justify-content: center; align-items: center; margin-top: 5px; margin-bottom: 25px;">
-                    <audio id="{unique_id}" src="{st.session_state.current_audio_b64}" {autoplay_attr} controls 
-                    style="width: 100%; height: 50px; transform: scale(1.3); transform-origin: center;"></audio>
-                </div>
-            """
-            st.components.v1.html(html_audio, height=80)
-
-    # Khoảng cách an toàn (Double check)
-    st.write("") 
+    # AUDIO (ĐÃ CẬP NHẬT CSS MEDIA QUERY)
+    if st.session_state.get('current_audio_b64'):
+        unique_id = f"audio_{uuid.uuid4()}"
+        autoplay_attr = "autoplay" if auto_play else ""
+        
+        # --- HTML CSS NỘI BỘ CHO AUDIO ---
+        # Chỉ phóng to (scale) khi màn hình < 600px (Điện thoại)
+        # Trên Desktop: width 60%, không scale, margin thấp
+        html_audio = f"""
+            <style>
+                .audio-container {{
+                    display: flex; justify-content: center; align-items: center;
+                    margin-bottom: 20px; /* Default desktop margin */
+                }}
+                audio {{
+                    width: 60%; /* Default desktop width */
+                    height: 40px;
+                }}
+                
+                @media only screen and (max-width: 600px) {{
+                    .audio-container {{
+                        margin-bottom: 35px; /* Tăng margin để không đè nút trên mobile */
+                        margin-top: 10px;
+                    }}
+                    audio {{
+                        width: 100%; 
+                        height: 50px;
+                        transform: scale(1.25); /* Phóng to trên mobile */
+                        transform-origin: center;
+                    }}
+                }}
+            </style>
+            <div class="audio-container">
+                <audio id="{unique_id}" src="{st.session_state.current_audio_b64}" {autoplay_attr} controls></audio>
+            </div>
+        """
+        # Tăng height khung chứa lên 90 để bao trọn audio khi scale
+        st.components.v1.html(html_audio, height=90)
 
     # KHU VỰC TRẢ LỜI
     if st.session_state.mode == "🗣️ Luyện Phát Âm (Beta)":
