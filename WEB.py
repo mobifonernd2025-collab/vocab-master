@@ -8,7 +8,7 @@ import time
 import base64
 from gtts import gTTS
 
-# --- THƯ VIỆN MỚI CHO TÍNH NĂNG 4 ---
+# --- KIỂM TRA THƯ VIỆN LUYỆN NÓI ---
 try:
     import speech_recognition as sr
     from streamlit_mic_recorder import mic_recorder
@@ -17,7 +17,6 @@ except ImportError:
     st.stop()
 
 # ==================== CẤU HÌNH ====================
-JSON_FILE = 'credentials.json'
 FILE_ID = '1xWdc8hmymvKn4bPzi8-YEy5hd_cVXdq22dVnwzB4Id0' 
 COL_ENG = 'Từ vựng'
 COL_VIE = 'Nghĩa'
@@ -25,7 +24,7 @@ AUTHOR = "Thanh Xuân"
 
 st.set_page_config(page_title=f"Vocab Master - {AUTHOR}", page_icon="🌸", layout="centered")
 
-# --- CSS ---
+# --- CSS (ĐÃ FIX LỖI DÍNH NÚT TRÊN ĐIỆN THOẠI) ---
 st.markdown("""
     <style>
     .stApp { background-color: #FFF0F5; }
@@ -36,6 +35,7 @@ st.markdown("""
     .main-title { font-size: 30px !important; font-weight: 800 !important; color: #C71585 !important; text-align: center; margin-bottom: 5px; }
     .main-card { background-color: #ffffff; padding: 20px; border-radius: 20px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.05); border-top: 8px solid #FFB6C1; margin-bottom: 20px; }
     
+    /* Style nút chung */
     div.stButton > button { 
         height: 3.2em !important; font-size: 22px !important; 
         border-radius: 12px !important; font-weight: 600 !important; 
@@ -43,18 +43,33 @@ st.markdown("""
         color: #C71585 !important; width: 100%; margin-bottom: 8px;
         transition: transform 0.1s;
     }
-    div.stButton > button:hover { background-color: #FFB6C1 !important; color: white !important; }
-    div.stButton > button:active { transform: scale(0.96); }
+
+    /* Hiệu ứng Hover chỉ hiện trên máy tính (có chuột) */
+    @media (hover: hover) {
+        div.stButton > button:hover { background-color: #FFB6C1 !important; color: white !important; }
+    }
+
+    /* Hiệu ứng bấm trên điện thoại (Active) */
+    div.stButton > button:active { 
+        background-color: #FFB6C1 !important; 
+        color: white !important; 
+        transform: scale(0.96); 
+    }
     
+    /* Fix lỗi dính màu nút sau khi bấm trên Mobile */
+    div.stButton > button:focus:not(:active) {
+        border-color: #FFB6C1 !important;
+        color: #C71585 !important;
+        background-color: #ffffff !important;
+    }
+
     .author-text { text-align: center; color: #C71585; font-size: 0.9em; margin-top: 20px; opacity: 0.7; }
-    
-    /* Style cho kết quả luyện nói */
     .speech-result-success { color: green; font-weight: bold; font-size: 1.2em; text-align: center; }
     .speech-result-fail { color: red; font-weight: bold; font-size: 1.2em; text-align: center; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- HÀM HỖ TRỢ ---
+# --- HÀM HỖ TRỢ CŨ (GIỮ NGUYÊN) ---
 def get_audio_base64(text):
     if not text: return None
     try:
@@ -66,125 +81,110 @@ def get_audio_base64(text):
         return f"data:audio/mp3;base64,{b64}"
     except: return None
 
-# Hàm xử lý nhận diện giọng nói (Feature 4)
 def recognize_speech(audio_bytes):
     r = sr.Recognizer()
     try:
         audio_file = io.BytesIO(audio_bytes)
         with sr.AudioFile(audio_file) as source:
             audio_data = r.record(source)
-            # Dùng Google Speech API (miễn phí, có giới hạn nhưng đủ dùng cho học tập)
             text = r.recognize_google(audio_data, language="en-US")
             return text.lower()
-    except sr.UnknownValueError:
-        return "kém_chất_lượng"  # Không nghe rõ
-    except Exception as e:
-        return f"lỗi: {str(e)}"
+    except: return "kém_chất_lượng"
 
 @st.cache_resource(ttl=60)
 def get_gspread_client():
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    
-    # Thay vì đọc file JSON, ta đọc từ Secrets của Streamlit
-    # Mục [gcp_service_account] chính là cái bạn vừa dán vào Settings lúc nãy
     try:
+        # Đọc từ Secrets (dùng cho Streamlit Cloud)
         key_dict = dict(st.secrets["gcp_service_account"])
         creds = ServiceAccountCredentials.from_json_keyfile_dict(key_dict, scope)
         return gspread.authorize(creds)
     except Exception as e:
-        st.error(f"Lỗi đọc Secrets: {e}. Hãy kiểm tra lại mục Secrets trong Settings.")
+        st.error(f"Lỗi kết nối: {e}")
         return None
 
 def load_data():
     try:
         client = get_gspread_client()
+        if not client: return []
         spreadsheet = client.open_by_key(FILE_ID)
-        # Tự động lấy sheet đang chọn hoặc sheet đầu tiên
         sheet_name = st.session_state.get('selected_sheet_name')
-        if sheet_name:
-            ws = spreadsheet.worksheet(sheet_name)
-        else:
-            ws = spreadsheet.get_worksheet(0)
-        
-        records = ws.get_all_records()
-        return [r for r in records if r.get(COL_ENG) and r.get(COL_VIE)]
+        if sheet_name: ws = spreadsheet.worksheet(sheet_name)
+        else: ws = spreadsheet.get_worksheet(0)
+        return [r for r in ws.get_all_records() if r.get(COL_ENG) and r.get(COL_VIE)]
     except: return []
 
-# --- STATE MANAGEMENT ---
+# --- QUẢN LÝ TRẠNG THÁI (STATE) ---
+# Các biến cơ bản cũ
 if 'score' not in st.session_state: st.session_state.score = 0
 if 'total' not in st.session_state: st.session_state.total = 0
 if 'quiz' not in st.session_state: st.session_state.quiz = None
-if 'last_q' not in st.session_state: st.session_state.last_q = None
 if 'current_audio_b64' not in st.session_state: st.session_state.current_audio_b64 = None 
 if 'last_result_msg' not in st.session_state: st.session_state.last_result_msg = None
-# Feature 2: Theo dõi từ sai
-if 'mistakes' not in st.session_state: st.session_state.mistakes = {} 
 
-# --- SIDEBAR ---
-client = get_gspread_client() # Lấy client để load danh sách sheet
+# Các biến MỚI (cho thuật toán thông minh)
+if 'word_weights' not in st.session_state: st.session_state.word_weights = {}  # Lưu điểm ưu tiên của từng từ
+if 'recent_history' not in st.session_state: st.session_state.recent_history = [] # Lưu 5 từ gần nhất
+if 'start_time' not in st.session_state: st.session_state.start_time = 0 # Bấm giờ
+
+# --- SIDEBAR CŨ (GIỮ NGUYÊN) ---
+client = get_gspread_client()
 try:
-    spreadsheet = client.open_by_key(FILE_ID)
-    sheet_names = [ws.title for ws in spreadsheet.worksheets()]
-except:
-    sheet_names = []
+    if client:
+        spreadsheet = client.open_by_key(FILE_ID)
+        sheet_names = [ws.title for ws in spreadsheet.worksheets()]
+    else: sheet_names = []
+except: sheet_names = []
 
 with st.sidebar:
     st.title("⚙️ Cài đặt")
     if sheet_names:
-        # Khi đổi sheet, reset quiz
         new_sheet = st.selectbox("Chủ đề:", sheet_names)
         if new_sheet != st.session_state.get('selected_sheet_name'):
             st.session_state.selected_sheet_name = new_sheet
             st.session_state.quiz = None
+            st.session_state.recent_history = [] # Reset lịch sử khi đổi bài
             st.rerun()
-    else:
-        st.error("Lỗi kết nối Sheet!"); st.stop()
-
-    # Thêm chế độ mới cho Feature 4
+    
     st.session_state.mode = st.radio("Chế độ:", ["Anh ➔ Việt", "Việt ➔ Anh", "🗣️ Luyện Phát Âm (Beta)"])
     
-    # Feature 2: Toggle
-    use_smart_review = st.checkbox("🧠 Ôn tập thông minh", value=True, help="Ưu tiên xuất hiện lại các từ bạn hay làm sai.")
-
-    if st.button("Reset điểm & Dữ liệu sai"):
+    use_smart_review = st.checkbox("🧠 Ôn tập thông minh", value=True, help="Ưu tiên từ sai và từ bạn suy nghĩ lâu.")
+    
+    if st.button("Reset điểm & Thuật toán"):
         st.session_state.score = 0
         st.session_state.total = 0
-        st.session_state.mistakes = {} # Reset bộ nhớ thông minh
+        st.session_state.word_weights = {} 
+        st.session_state.recent_history = []
         st.rerun()
-    
-    if st.session_state.mistakes:
-        st.caption(f"📝 Đã ghi nhớ {len(st.session_state.mistakes)} từ khó.")
 
 data = load_data()
 
-# --- LOGIC ---
+# --- LOGIC MỚI (THÔNG MINH HƠN) ---
 def generate_new_question():
     if len(data) < 2: return
     
-    # --- LOGIC FEATURE 2: SMART REVIEW ---
-    if use_smart_review and st.session_state.mistakes:
-        # Tính trọng số: Từ sai nhiều có trọng số cao hơn
-        weights = []
-        for d in data:
-            word = d[COL_ENG]
-            mistake_count = st.session_state.mistakes.get(word, 0)
-            # Công thức: Mặc định 1 + (số lần sai * 10) -> Sai 1 lần thì khả năng gặp lại gấp 11 lần
-            weights.append(1 + mistake_count * 10)
-        
-        # Chọn ngẫu nhiên dựa trên trọng số (Weighted Random)
-        target = random.choices(data, weights=weights, k=1)[0]
-        
-        # Tránh lặp lại câu hỏi vừa xong nếu có thể
-        if target[COL_ENG] == st.session_state.last_q and len(data) > 5:
-             target = random.choices(data, weights=weights, k=1)[0]
-    else:
-        # Chế độ ngẫu nhiên thường
-        available = [d for d in data if d[COL_ENG] != st.session_state.last_q]
-        target = random.choice(available if available else data)
+    # 1. BƯỚC LỌC: Loại bỏ các từ vừa mới gặp (trong recent_history)
+    # Chỉ lọc nếu danh sách từ vựng đủ lớn (> 8 từ)
+    available_pool = data
+    if len(data) > 8:
+        available_pool = [d for d in data if d[COL_ENG] not in st.session_state.recent_history]
+        if not available_pool: available_pool = data # Fallback an toàn nếu lọc hết sạch từ
 
+    # 2. BƯỚC CHỌN: Dựa trên Trọng số (Smart Review)
+    target = None
+    if use_smart_review:
+        # Lấy trọng số (mặc định là 10)
+        weights = [st.session_state.word_weights.get(d[COL_ENG], 10) for d in available_pool]
+        # Chọn ngẫu nhiên có trọng số (Weighted Random)
+        target = random.choices(available_pool, weights=weights, k=1)[0]
+    else:
+        # Chọn ngẫu nhiên hoàn toàn
+        target = random.choice(available_pool)
+
+    # 3. Tạo đáp án nhiễu
     others = random.sample([d for d in data if d != target], min(3, len(data)-1))
     
-    # Setup cho chế độ trắc nghiệm
+    # Setup câu hỏi
     if st.session_state.mode == "Anh ➔ Việt":
         q, a = target[COL_ENG], target[COL_VIE]
         opts = [d[COL_VIE] for d in others] + [a]
@@ -192,131 +192,104 @@ def generate_new_question():
         q, a = target[COL_VIE], target[COL_ENG]
         opts = [d[COL_ENG] for d in others] + [a]
     else: 
-        # Chế độ Luyện Phát Âm
-        q, a = target[COL_ENG], target[COL_VIE] # Hiện tiếng Anh
-        opts = [] # Không cần options
+        q, a = target[COL_ENG], target[COL_VIE]
+        opts = []
 
-    if st.session_state.mode != "🗣️ Luyện Phát Âm (Beta)":
-        random.shuffle(opts)
+    if st.session_state.mode != "🗣️ Luyện Phát Âm (Beta)": random.shuffle(opts)
         
-    st.session_state.quiz = {'q': q, 'a': a, 'opts': opts, 'raw_en': target[COL_ENG], 'raw_vn': target[COL_VIE]}
-    st.session_state.last_q = target[COL_ENG]
+    st.session_state.quiz = {'q': q, 'a': a, 'opts': opts, 'raw_en': target[COL_ENG]}
     st.session_state.current_audio_b64 = get_audio_base64(target[COL_ENG])
-    # Reset biến cho Luyện Nói
-    st.session_state.speech_feedback = None 
+    
+    # BẮT ĐẦU BẤM GIỜ
+    st.session_state.start_time = time.time()
 
 def handle_answer(selected_opt):
     quiz = st.session_state.quiz
-    st.session_state.total += 1
-    
     target_word = quiz['raw_en']
     
+    # TÍNH THỜI GIAN TRẢ LỜI
+    duration = time.time() - st.session_state.start_time
+    
+    st.session_state.total += 1
+    current_weight = st.session_state.word_weights.get(target_word, 10)
+
     if selected_opt == quiz['a']:
         st.session_state.score += 1
         st.session_state.last_result_msg = ("success", "🎉 Chính xác!")
-        # Nếu trả lời đúng, giảm "độ khó" của từ này trong bộ nhớ (nếu có)
-        if target_word in st.session_state.mistakes:
-            st.session_state.mistakes[target_word] = max(0, st.session_state.mistakes[target_word] - 1)
-            if st.session_state.mistakes[target_word] == 0:
-                del st.session_state.mistakes[target_word]
+        
+        # LOGIC MỚI: ĐIỀU CHỈNH TRỌNG SỐ THEO THỜI GIAN
+        if use_smart_review:
+            if duration < 3.0: 
+                # Nhanh (<3s) => Đã thuộc => Giảm ưu tiên (ít gặp lại)
+                new_weight = max(1, current_weight - 3)
+            elif duration > 5.0:
+                # Chậm (>5s) => Còn lưỡng lự => Tăng nhẹ ưu tiên
+                new_weight = min(100, current_weight + 3)
+            else:
+                # Bình thường => Giảm nhẹ
+                new_weight = max(1, current_weight - 1)
+            
+            st.session_state.word_weights[target_word] = new_weight
+            
     else:
         st.session_state.last_result_msg = ("error", f"❌ Sai rồi! Đáp án là: {quiz['a']}")
-        # FEATURE 2: Ghi nhận lỗi sai
-        st.session_state.mistakes[target_word] = st.session_state.mistakes.get(target_word, 0) + 1
-        
+        # Sai => Tăng mạnh ưu tiên để gặp lại sớm
+        st.session_state.word_weights[target_word] = min(100, current_weight + 10)
+
+    # CẬP NHẬT LỊCH SỬ (CHỐNG LẶP)
+    st.session_state.recent_history.append(target_word)
+    # Chỉ nhớ 5 từ gần nhất
+    if len(st.session_state.recent_history) > 5:
+        st.session_state.recent_history.pop(0)
+
     generate_new_question()
 
-# --- GIAO DIỆN FRAGMENT ---
-st.markdown(f'<h1 class="main-title">🌸 Học gói từ vựng {st.session_state.selected_sheet_name}</h1>', unsafe_allow_html=True)
+# --- GIAO DIỆN (UI) ---
+st.markdown(f'<h1 class="main-title">🌸 {st.session_state.get("selected_sheet_name", "Loading...")}</h1>', unsafe_allow_html=True)
 
 @st.fragment
 def show_quiz_area():
-    if not data:
-        st.warning("Sheet này chưa có từ vựng!")
-        return
-
+    if not data: return
     if st.session_state.quiz is None:
         generate_new_question()
         st.rerun()
 
     quiz = st.session_state.quiz
     
-    # Hiển thị thông báo (Toast style)
+    # Thông báo
     if st.session_state.last_result_msg:
         mstype, msg = st.session_state.last_result_msg
         if mstype == "success": st.success(msg, icon="✅")
         else: st.error(msg, icon="⚠️")
         st.session_state.last_result_msg = None
 
-    # Card hiển thị từ vựng
+    # Hiển thị câu hỏi
     st.markdown(f'<div class="main-card"><h1 style="color: #333; font-size: 2.8em; margin: 0;">{quiz["q"]}</h1></div>', unsafe_allow_html=True)
     
-    # Audio Player (Chỉ hiện ở chế độ trắc nghiệm hoặc gợi ý)
+    # Audio Player
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         if st.session_state.get('current_audio_b64'):
             unique_id = f"audio_{uuid.uuid4()}"
-            audio_html = f"""
-                <div id="container_{unique_id}">
-                    <audio id="{unique_id}" controls autoplay style="width: 100%;">
-                        <source src="{st.session_state.current_audio_b64}" type="audio/mp3">
-                    </audio>
-                </div>
-                <script>
-                    var audio = document.getElementById("{unique_id}");
-                    if (audio) {{ audio.load(); audio.play().catch(e => console.log(e)); }}
-                </script>
-            """
-            st.components.v1.html(audio_html, height=50)
+            st.components.v1.html(f"""<audio id="{unique_id}" src="{st.session_state.current_audio_b64}" autoplay controls style="width:100%"></audio><script>document.getElementById("{unique_id}").play();</script>""", height=50)
 
-    # --- CHIA GIAO DIỆN THEO CHẾ ĐỘ ---
-    
-    # 1. GIAO DIỆN LUYỆN NÓI (FEATURE 4)
+    # Các nút bấm
     if st.session_state.mode == "🗣️ Luyện Phát Âm (Beta)":
-        st.markdown(f"<div style='text-align:center; margin-bottom:10px'>Hãy đọc to từ: <b>{quiz['raw_en']}</b></div>", unsafe_allow_html=True)
-        
-        # Cột canh giữa cho nút Mic
         c1, c2, c3 = st.columns([1, 1, 1])
-        with c2:
-            # Thu âm: trả về định dạng wav để xử lý dễ nhất
-            audio = mic_recorder(start_prompt="🎙️ Bấm để nói", stop_prompt="⏹️ Dừng", key=f"mic_{quiz['raw_en']}", format="wav")
-            
+        with c2: audio = mic_recorder(start_prompt="🎙️ Nói", stop_prompt="⏹️ Dừng", key=f"mic_{quiz['raw_en']}")
         if audio:
-            # Xử lý khi có file ghi âm
-            with st.spinner("Đang nghe..."):
-                spoken_text = recognize_speech(audio['bytes'])
-            
-            target_word = quiz['raw_en'].lower().strip()
-            
-            if spoken_text == "kém_chất_lượng":
-                st.warning("🙉 Không nghe rõ, bạn thử lại nhé!")
-            elif spoken_text.startswith("lỗi"):
-                st.error(f"Lỗi kỹ thuật: {spoken_text}")
-            else:
-                st.write(f"Bạn nói: **{spoken_text}**")
-                # So sánh (chấp nhận sai lệch nhỏ nếu cần, ở đây so sánh chính xác)
-                if spoken_text == target_word:
-                    st.markdown('<div class="speech-result-success">🎯 Tuyệt vời! Chính xác 100%</div>', unsafe_allow_html=True)
-                    st.balloons()
-                    time.sleep(1.5)
-                    generate_new_question() # Tự động qua câu mới
-                    st.rerun()
-                else:
-                     st.markdown(f'<div class="speech-result-fail">😅 Gần đúng rồi! (Target: {target_word})</div>', unsafe_allow_html=True)
-
-        if st.button("Bỏ qua từ này ➡️"):
-            generate_new_question()
-            st.rerun()
-
-    # 2. GIAO DIỆN TRẮC NGHIỆM (CŨ)
+            spoken = recognize_speech(audio['bytes'])
+            if spoken == quiz['raw_en'].lower().strip():
+                st.balloons(); time.sleep(1); generate_new_question(); st.rerun()
+            else: st.error(f"Bạn nói: {spoken}")
+        if st.button("Bỏ qua"): generate_new_question(); st.rerun()
     else:
-        for opt in quiz['opts']:
-            st.button(opt, key=f"btn_{uuid.uuid4()}", on_click=handle_answer, args=(opt,), use_container_width=True)
-
-        # Thanh điểm số
-        score_val = st.session_state.score / (st.session_state.total if st.session_state.total > 0 else 1)
-        st.progress(score_val)
-        st.caption(f"Điểm số: **{st.session_state.score} / {st.session_state.total}**")
+        # Nút trắc nghiệm
+        for opt in quiz['opts']: 
+            # Dùng UUID để reset trạng thái nút (Fix lỗi mobile)
+            st.button(opt, key=uuid.uuid4(), on_click=handle_answer, args=(opt,), use_container_width=True)
+        
+        st.progress(st.session_state.score / (st.session_state.total if st.session_state.total > 0 else 1))
 
 show_quiz_area()
 st.markdown(f'<div class="author-text">Made by {AUTHOR} 🌸</div>', unsafe_allow_html=True)
