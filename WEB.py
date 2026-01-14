@@ -69,7 +69,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- HÀM HỖ TRỢ CŨ (GIỮ NGUYÊN) ---
+# --- HÀM HỖ TRỢ ---
 def get_audio_base64(text):
     if not text: return None
     try:
@@ -115,7 +115,6 @@ def load_data():
     except: return []
 
 # --- QUẢN LÝ TRẠNG THÁI (STATE) ---
-# Các biến cơ bản cũ
 if 'score' not in st.session_state: st.session_state.score = 0
 if 'total' not in st.session_state: st.session_state.total = 0
 if 'quiz' not in st.session_state: st.session_state.quiz = None
@@ -123,11 +122,11 @@ if 'current_audio_b64' not in st.session_state: st.session_state.current_audio_b
 if 'last_result_msg' not in st.session_state: st.session_state.last_result_msg = None
 
 # Các biến MỚI (cho thuật toán thông minh)
-if 'word_weights' not in st.session_state: st.session_state.word_weights = {}  # Lưu điểm ưu tiên của từng từ
-if 'recent_history' not in st.session_state: st.session_state.recent_history = [] # Lưu 5 từ gần nhất
-if 'start_time' not in st.session_state: st.session_state.start_time = 0 # Bấm giờ
+if 'word_weights' not in st.session_state: st.session_state.word_weights = {} 
+if 'recent_history' not in st.session_state: st.session_state.recent_history = [] 
+if 'start_time' not in st.session_state: st.session_state.start_time = 0 
 
-# --- SIDEBAR CŨ (GIỮ NGUYÊN) ---
+# --- SIDEBAR ---
 client = get_gspread_client()
 try:
     if client:
@@ -143,7 +142,7 @@ with st.sidebar:
         if new_sheet != st.session_state.get('selected_sheet_name'):
             st.session_state.selected_sheet_name = new_sheet
             st.session_state.quiz = None
-            st.session_state.recent_history = [] # Reset lịch sử khi đổi bài
+            st.session_state.recent_history = [] 
             st.rerun()
     
     st.session_state.mode = st.radio("Chế độ:", ["Anh ➔ Việt", "Việt ➔ Anh", "🗣️ Luyện Phát Âm (Beta)"])
@@ -159,26 +158,22 @@ with st.sidebar:
 
 data = load_data()
 
-# --- LOGIC MỚI (THÔNG MINH HƠN) ---
+# --- LOGIC ---
 def generate_new_question():
     if len(data) < 2: return
     
-    # 1. BƯỚC LỌC: Loại bỏ các từ vừa mới gặp (trong recent_history)
-    # Chỉ lọc nếu danh sách từ vựng đủ lớn (> 8 từ)
+    # 1. BƯỚC LỌC: Loại bỏ các từ vừa mới gặp
     available_pool = data
     if len(data) > 8:
         available_pool = [d for d in data if d[COL_ENG] not in st.session_state.recent_history]
-        if not available_pool: available_pool = data # Fallback an toàn nếu lọc hết sạch từ
+        if not available_pool: available_pool = data 
 
     # 2. BƯỚC CHỌN: Dựa trên Trọng số (Smart Review)
     target = None
     if use_smart_review:
-        # Lấy trọng số (mặc định là 10)
         weights = [st.session_state.word_weights.get(d[COL_ENG], 10) for d in available_pool]
-        # Chọn ngẫu nhiên có trọng số (Weighted Random)
         target = random.choices(available_pool, weights=weights, k=1)[0]
     else:
-        # Chọn ngẫu nhiên hoàn toàn
         target = random.choice(available_pool)
 
     # 3. Tạo đáp án nhiễu
@@ -215,30 +210,29 @@ def handle_answer(selected_opt):
 
     if selected_opt == quiz['a']:
         st.session_state.score += 1
-        st.session_state.last_result_msg = ("success", "🎉 Chính xác!")
+        # --- CẬP NHẬT: THÔNG BÁO CHI TIẾT KHI ĐÚNG ---
+        st.session_state.last_result_msg = ("success", f"🎉 Chính xác: {quiz['q']} - {quiz['a']}")
         
-        # LOGIC MỚI: ĐIỀU CHỈNH TRỌNG SỐ THEO THỜI GIAN
+        # LOGIC ĐIỀU CHỈNH TRỌNG SỐ
         if use_smart_review:
             if duration < 3.0: 
-                # Nhanh (<3s) => Đã thuộc => Giảm ưu tiên (ít gặp lại)
                 new_weight = max(1, current_weight - 3)
             elif duration > 5.0:
-                # Chậm (>5s) => Còn lưỡng lự => Tăng nhẹ ưu tiên
                 new_weight = min(100, current_weight + 3)
             else:
-                # Bình thường => Giảm nhẹ
                 new_weight = max(1, current_weight - 1)
-            
             st.session_state.word_weights[target_word] = new_weight
             
     else:
-        st.session_state.last_result_msg = ("error", f"❌ Sai rồi! Đáp án là: {quiz['a']}")
-        # Sai => Tăng mạnh ưu tiên để gặp lại sớm
+        # --- CẬP NHẬT: THÔNG BÁO CHI TIẾT KHI SAI ---
+        # "Sai rồi: 'Hello' là 'Xin chào' chứ không phải 'Tạm biệt'"
+        st.session_state.last_result_msg = ("error", f"❌ Sai rồi: '{quiz['q']}' là '{quiz['a']}' chứ không phải '{selected_opt}'")
+        
+        # Sai => Tăng mạnh ưu tiên
         st.session_state.word_weights[target_word] = min(100, current_weight + 10)
 
-    # CẬP NHẬT LỊCH SỬ (CHỐNG LẶP)
+    # CẬP NHẬT LỊCH SỬ
     st.session_state.recent_history.append(target_word)
-    # Chỉ nhớ 5 từ gần nhất
     if len(st.session_state.recent_history) > 5:
         st.session_state.recent_history.pop(0)
 
@@ -256,14 +250,14 @@ def show_quiz_area():
 
     quiz = st.session_state.quiz
     
-    # Thông báo
+    # Thông báo (Toast)
     if st.session_state.last_result_msg:
         mstype, msg = st.session_state.last_result_msg
         if mstype == "success": st.success(msg, icon="✅")
         else: st.error(msg, icon="⚠️")
         st.session_state.last_result_msg = None
 
-    # Hiển thị câu hỏi
+    # Card
     st.markdown(f'<div class="main-card"><h1 style="color: #333; font-size: 2.8em; margin: 0;">{quiz["q"]}</h1></div>', unsafe_allow_html=True)
     
     # Audio Player
@@ -286,7 +280,6 @@ def show_quiz_area():
     else:
         # Nút trắc nghiệm
         for opt in quiz['opts']: 
-            # Dùng UUID để reset trạng thái nút (Fix lỗi mobile)
             st.button(opt, key=uuid.uuid4(), on_click=handle_answer, args=(opt,), use_container_width=True)
         
         st.progress(st.session_state.score / (st.session_state.total if st.session_state.total > 0 else 1))
