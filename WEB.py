@@ -67,7 +67,6 @@ st.markdown(f"""
         font-size: 1.1rem !important;
     }}
 
-    /* Nút bấm */
     div.stButton > button {{ 
         height: 3.2em !important; 
         font-size: 18px !important; 
@@ -190,11 +189,13 @@ with st.sidebar:
             st.rerun()
     st.radio("Chế độ:", ["Anh ➔ Việt", "Việt ➔ Anh", "🗣️ Luyện Phát Âm (Beta)"], key="mode", on_change=reset_quiz)
     auto_play = st.toggle("🔊 Tự động phát âm", value=True)
-    use_smart_review = st.checkbox("🧠 Ôn tập thông minh", value=True)
+    use_smart_review = st.checkbox("🧠 Ôn tập thông minh", value=True, help="Ưu tiên từ mới và từ bạn suy nghĩ lâu.")
+    
     if st.button("Reset điểm & Thuật toán"):
         st.session_state.score = 0; st.session_state.total = 0; st.session_state.word_weights = {} 
         st.session_state.recent_history = []; st.session_state.last_audio_bytes = None; st.session_state.combo = 0
         reset_quiz(); st.rerun()
+        
     st.divider()
     st.markdown("""
         <div style='text-align: center; color: gray; font-size: 0.9em;'>
@@ -205,9 +206,11 @@ with st.sidebar:
 
 data = load_data()
 
-# --- LOGIC ---
+# --- LOGIC THÔNG MINH (ĐÃ UPDATE ƯU TIÊN TỪ MỚI) ---
 def generate_new_question():
     if len(data) < 2: return
+    
+    # 1. Lọc bỏ các từ vừa mới gặp (trong recent_history)
     available_pool = data
     if len(data) > 8:
         available_pool = [d for d in data if d[COL_ENG] not in st.session_state.recent_history]
@@ -215,9 +218,20 @@ def generate_new_question():
 
     target = None
     if use_smart_review:
-        weights = [st.session_state.word_weights.get(d[COL_ENG], 10) for d in available_pool]
+        weights = []
+        for d in available_pool:
+            word = d[COL_ENG]
+            # LOGIC QUAN TRỌNG Ở ĐÂY:
+            # Nếu từ này chưa có trong bộ nhớ trọng số -> Nó là TỪ MỚI TINH -> Gán trọng số CAO (50)
+            # Nếu đã có -> Lấy trọng số cũ (thường là 1-20)
+            if word not in st.session_state.word_weights:
+                weights.append(50) # ƯU TIÊN TỪ MỚI
+            else:
+                weights.append(st.session_state.word_weights[word])
+        
         target = random.choices(available_pool, weights=weights, k=1)[0]
-    else: target = random.choice(available_pool)
+    else:
+        target = random.choice(available_pool)
 
     others = random.sample([d for d in data if d != target], min(3, len(data)-1))
     
@@ -241,27 +255,33 @@ def handle_answer(selected_opt):
     target_word = quiz['raw_en']
     duration = time.time() - st.session_state.start_time
     st.session_state.total += 1
+    
+    # Lấy trọng số hiện tại (Nếu là từ mới, mặc định coi như 10 để tính toán tiếp)
     current_weight = st.session_state.word_weights.get(target_word, 10)
 
     if selected_opt == quiz['a']:
         st.session_state.score += 1; st.session_state.combo += 1 
         fire_icon = "🔥" * min(st.session_state.combo, 5) if st.session_state.combo > 1 else "🎉"
-        st.session_state.last_result_msg = ("success", f"{fire_icon} Ngon luônnn!: {quiz['q']} - {quiz['a']}")
+        st.session_state.last_result_msg = ("success", f"{fire_icon} Chính xác: {quiz['q']} - {quiz['a']}")
+        
         if use_smart_review:
-            if duration < 2.0: new_weight = max(1, current_weight - 3)
-            elif duration > 3.5: new_weight = min(100, current_weight + 3)
-            else: new_weight = max(1, current_weight - 1)
+            # Logic: Nhanh -> Giảm mạnh (để nhường chỗ từ khác). Chậm -> Tăng nhẹ.
+            if duration < 2.0: new_weight = max(1, current_weight - 5)
+            elif duration > 3.5: new_weight = min(100, current_weight + 5)
+            else: new_weight = max(1, current_weight - 2)
+            
             st.session_state.word_weights[target_word] = new_weight
     else:
         st.session_state.combo = 0 
-        st.session_state.last_result_msg = ("error", f"❌ Toang rồi: '{quiz['q']}' là '{quiz['a']}' chứ không phải '{selected_opt}'")
-        st.session_state.word_weights[target_word] = min(100, current_weight + 10)
+        st.session_state.last_result_msg = ("error", f"❌ Sai rồi: '{quiz['q']}' là '{quiz['a']}' chứ không phải '{selected_opt}'")
+        # Sai -> Tăng cực mạnh trọng số để gặp lại ngay
+        st.session_state.word_weights[target_word] = min(100, current_weight + 15)
 
     st.session_state.recent_history.append(target_word)
     if len(st.session_state.recent_history) > 5: st.session_state.recent_history.pop(0)
     generate_new_question()
 
-# --- GIAO DIỆN CHÍNH (FIX LỖI AUDIO ĐÈ NÚT) ---
+# --- GIAO DIỆN CHÍNH ---
 st.markdown(f'<h1 class="main-title">🌸 {st.session_state.get("selected_sheet_name", "Loading...")}</h1>', unsafe_allow_html=True)
 
 @st.fragment
@@ -271,7 +291,6 @@ def show_quiz_area():
 
     quiz = st.session_state.quiz
     
-    # Header
     c1, c2, c3 = st.columns([2, 1, 2])
     with c1: st.caption(f"🏆 Điểm: **{st.session_state.score}/{st.session_state.total}**")
     with c2: 
@@ -279,56 +298,29 @@ def show_quiz_area():
     score_val = st.session_state.score / (st.session_state.total if st.session_state.total > 0 else 1)
     st.progress(score_val)
 
-    # Thông báo
     if st.session_state.last_result_msg:
         mstype, msg = st.session_state.last_result_msg
         if mstype == "success": st.success(msg, icon="✅")
         else: st.error(msg, icon="⚠️")
         st.session_state.last_result_msg = None
 
-    # Card Câu Hỏi
     st.markdown(f'<div class="main-card"><h1>{quiz["q"]}</h1></div>', unsafe_allow_html=True)
     
-    # AUDIO (ĐÃ CẬP NHẬT CSS MEDIA QUERY)
-    if st.session_state.get('current_audio_b64'):
-        unique_id = f"audio_{uuid.uuid4()}"
-        autoplay_attr = "autoplay" if auto_play else ""
-        
-        # --- HTML CSS NỘI BỘ CHO AUDIO ---
-        # Chỉ phóng to (scale) khi màn hình < 600px (Điện thoại)
-        # Trên Desktop: width 60%, không scale, margin thấp
-        html_audio = f"""
-            <style>
-                .audio-container {{
-                    display: flex; justify-content: center; align-items: center;
-                    margin-bottom: 20px; /* Default desktop margin */
-                }}
-                audio {{
-                    width: 60%; /* Default desktop width */
-                    height: 40px;
-                }}
-                
-                @media only screen and (max-width: 600px) {{
-                    .audio-container {{
-                        margin-bottom: 35px; /* Tăng margin để không đè nút trên mobile */
-                        margin-top: 10px;
-                    }}
-                    audio {{
-                        width: 100%; 
-                        height: 50px;
-                        transform: scale(1.25); /* Phóng to trên mobile */
-                        transform-origin: center;
-                    }}
-                }}
-            </style>
-            <div class="audio-container">
-                <audio id="{unique_id}" src="{st.session_state.current_audio_b64}" {autoplay_attr} controls></audio>
-            </div>
-        """
-        # Tăng height khung chứa lên 90 để bao trọn audio khi scale
-        st.components.v1.html(html_audio, height=90)
+    col1, col2, col3 = st.columns([0.5, 9, 0.5]) 
+    with col2:
+        if st.session_state.get('current_audio_b64'):
+            unique_id = f"audio_{uuid.uuid4()}"
+            autoplay_attr = "autoplay" if auto_play else ""
+            html_audio = f"""
+                <div style="display: flex; justify-content: center; align-items: center; margin-top: 5px; margin-bottom: 25px;">
+                    <audio id="{unique_id}" src="{st.session_state.current_audio_b64}" {autoplay_attr} controls 
+                    style="width: 100%; height: 50px; transform: scale(1.3); transform-origin: center;"></audio>
+                </div>
+            """
+            st.components.v1.html(html_audio, height=80)
 
-    # KHU VỰC TRẢ LỜI
+    st.write("") 
+
     if st.session_state.mode == "🗣️ Luyện Phát Âm (Beta)":
         c1, c2, c3 = st.columns([1, 1, 1])
         with c2: 
@@ -342,11 +334,10 @@ def show_quiz_area():
             else: st.session_state.combo = 0; st.error(f"Bạn nói: {spoken}")
         if st.button("Bỏ qua"): st.session_state.combo = 0; generate_new_question(); st.rerun()
     else:
-        # LƯỚI NÚT BẤM 2x2
         col_1, col_2 = st.columns(2)
         for idx, opt in enumerate(quiz['opts']):
             with (col_1 if idx % 2 == 0 else col_2): 
                 st.button(opt, key=uuid.uuid4(), on_click=handle_answer, args=(opt,), use_container_width=True)
 
 show_quiz_area()
-st.markdown(f'<div class="author-text">Made by {AUTHOR} Ver vip pro max ultra plus</div>', unsafe_allow_html=True)
+st.markdown(f'<div class="author-text">Made by {AUTHOR} 🌸</div>', unsafe_allow_html=True)
