@@ -27,107 +27,80 @@ st.set_page_config(page_title=f"Vocab Master - {AUTHOR}", page_icon="🌸", layo
 # --- QUẢN LÝ THEME (MÀU SẮC) ---
 if 'theme_mode' not in st.session_state: st.session_state.theme_mode = "Sakura (Hồng)"
 
-# Định nghĩa màu sắc cho 2 chế độ
 if st.session_state.theme_mode == "Mint (Xanh Dịu)":
-    # THEME XANH MINT (Dịu mắt, Tươi mát)
     THEME = {
-        "bg": "#E0F7FA",            # Nền xanh bạc hà cực nhạt
-        "card_bg": "#ffffff",       # Nền thẻ trắng
-        "text": "#00695C",          # Chữ xanh cổ vịt đậm (dễ đọc)
-        "sub_text": "#00897B",      # Chữ phụ xanh nhẹ hơn
-        "border": "#4DB6AC",        # Viền xanh ngọc
-        "btn_bg": "#ffffff",        # Nền nút trắng
-        "btn_hover": "#B2DFDB",     # Hover xanh nhạt
-        "btn_text": "#00695C",      # Chữ nút xanh đậm
-        "progress": "#009688"       # Màu thanh tiến độ
+        "bg": "#E0F7FA", "card_bg": "#ffffff", "text": "#00695C", "sub_text": "#00897B",
+        "border": "#4DB6AC", "btn_bg": "#ffffff", "btn_hover": "#B2DFDB", "btn_text": "#00695C", "progress": "#009688"
     }
 else:
-    # THEME SAKURA (Hồng Phấn - Cũ)
     THEME = {
-        "bg": "#FFF0F5",            # Nền hồng phấn
-        "card_bg": "#ffffff",       # Nền thẻ trắng
-        "text": "#C71585",          # Chữ hồng đậm
-        "sub_text": "#C71585",      # Chữ phụ hồng đậm
-        "border": "#FFB6C1",        # Viền hồng nhạt
-        "btn_bg": "#ffffff",        # Nền nút trắng
-        "btn_hover": "#FFB6C1",     # Hover hồng nhạt
-        "btn_text": "#C71585",      # Chữ nút hồng đậm
-        "progress": "#FF69B4"       # Màu thanh tiến độ
+        "bg": "#FFF0F5", "card_bg": "#ffffff", "text": "#C71585", "sub_text": "#C71585",
+        "border": "#FFB6C1", "btn_bg": "#ffffff", "btn_hover": "#FFB6C1", "btn_text": "#C71585", "progress": "#FF69B4"
     }
 
-# --- CSS ĐỘNG ---
+# --- CSS TỐI ƯU CHO MOBILE ---
 st.markdown(f"""
     <style>
     .stApp {{ background-color: {THEME['bg']}; }}
-    div[data-testid="stVerticalBlock"] {{ opacity: 1 !important; transition: none !important; }}
+    div[data-testid="stVerticalBlock"] {{ opacity: 1 !important; transition: none !important; gap: 0.5rem !important; }}
     .element-container {{ opacity: 1 !important; transition: none !important; }}
     div[data-testid="stStatusWidget"] {{ visibility: hidden; }}
 
-    .main-title {{ font-size: 30px !important; font-weight: 800 !important; color: {THEME['text']} !important; text-align: center; margin-bottom: 5px; }}
+    /* Tiêu đề nhỏ gọn hơn */
+    .main-title {{ font-size: 24px !important; font-weight: 800 !important; color: {THEME['text']} !important; text-align: center; margin-bottom: 0px; }}
     
+    /* Card câu hỏi: Giảm padding để gọn */
     .main-card {{ 
         background-color: {THEME['card_bg']}; 
-        padding: 15px; 
-        border-radius: 20px; 
+        padding: 10px; 
+        border-radius: 15px; 
         text-align: center; 
-        box-shadow: 0 5px 15px rgba(0,0,0,0.08); 
-        border-top: 8px solid {THEME['border']}; 
-        margin-bottom: 20px; 
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
+        border-top: 5px solid {THEME['border']}; 
+        margin-bottom: 10px; 
+        margin-top: 5px;
     }}
     
-    .main-card h1 {{ color: {THEME['text']} !important; }}
+    .main-card h1 {{ color: {THEME['text']} !important; font-size: 1.6em !important; margin: 0 !important; }}
 
+    /* Thông báo kết quả gọn hơn */
     div[data-testid="stAlert"] {{
-        font-size: 1.3rem !important; 
-        font-weight: 700 !important;
-        padding: 1rem !important;
+        padding: 0.5rem 1rem !important;
+        margin-bottom: 0.5rem !important;
     }}
 
-    /* Style nút chung */
+    /* Nút bấm: Giảm chiều cao một chút */
     div.stButton > button {{ 
-        height: 3.2em !important; font-size: 22px !important; 
-        border-radius: 12px !important; font-weight: 600 !important; 
+        height: 3em !important; 
+        font-size: 18px !important; /* Chữ nhỏ lại xíu cho vừa mobile */
+        border-radius: 10px !important; font-weight: 600 !important; 
         background-color: {THEME['btn_bg']}; 
         border: 2px solid {THEME['border']} !important; 
         color: {THEME['btn_text']} !important; 
-        width: 100%; margin-bottom: 8px;
+        width: 100%; margin-bottom: 5px;
         transition: transform 0.1s;
         -webkit-tap-highlight-color: transparent; 
         outline: none !important;
+        white-space: normal !important; /* Cho phép xuống dòng nếu đáp án dài */
+        padding: 2px 5px !important;
     }}
 
-    /* Hover trên máy tính */
     @media (hover: hover) {{
         div.stButton > button:hover {{ background-color: {THEME['btn_hover']} !important; color: {THEME['text']} !important; }}
     }}
 
-    /* Active trên điện thoại */
     @media (hover: none) {{
-        div.stButton > button:hover, 
-        div.stButton > button:focus {{ 
-            background-color: {THEME['btn_bg']} !important; 
-            color: {THEME['btn_text']} !important; 
-            border-color: {THEME['border']} !important;
-            box-shadow: none !important;
+        div.stButton > button:hover, div.stButton > button:focus {{ 
+            background-color: {THEME['btn_bg']} !important; color: {THEME['btn_text']} !important; border-color: {THEME['border']} !important; box-shadow: none !important;
         }}
-        div.stButton > button:active {{ 
-            background-color: {THEME['btn_hover']} !important; 
-            transform: scale(0.96); 
-        }}
+        div.stButton > button:active {{ background-color: {THEME['btn_hover']} !important; transform: scale(0.96); }}
     }}
     
-    .combo-text {{
-        text-align: center; font-size: 1.2em; font-weight: bold;
-        color: #FF4500; margin-bottom: 10px;
-        animation: pulse 0.5s infinite alternate;
-    }}
-
-    .author-text {{ text-align: center; color: {THEME['sub_text']}; font-size: 0.9em; margin-top: 20px; opacity: 0.7; }}
+    .combo-text {{ text-align: center; font-size: 1em; font-weight: bold; color: #FF4500; margin-bottom: 5px; animation: pulse 0.5s infinite alternate; }}
+    .author-text {{ text-align: center; color: {THEME['sub_text']}; font-size: 0.8em; margin-top: 10px; opacity: 0.7; }}
     
-    p, label {{ color: {THEME['text']} !important; }}
-    .stCaption {{ color: {THEME['sub_text']} !important; }}
-    
-    /* Màu thanh Progress bar */
+    p, label {{ color: {THEME['text']} !important; margin-bottom: 0px !important; }}
+    .stCaption {{ color: {THEME['sub_text']} !important; font-size: 0.9em !important; }}
     .stProgress > div > div > div > div {{ background-color: {THEME['progress']} !important; }}
     </style>
     """, unsafe_allow_html=True)
@@ -205,18 +178,11 @@ except: sheet_names = []
 
 with st.sidebar:
     st.title("⚙️ Cài đặt")
-    
-    # --- NÚT CHUYỂN GIAO DIỆN (DROPDOWN) ---
-    st.markdown("### 🎨 Giao diện")
-    # Thay Toggle bằng Selectbox để chọn màu rõ ràng hơn
     theme_choice = st.selectbox("Chọn màu:", ["Sakura (Hồng)", "Mint (Xanh Dịu)"], index=0 if st.session_state.theme_mode == "Sakura (Hồng)" else 1)
-    
     if theme_choice != st.session_state.theme_mode:
         st.session_state.theme_mode = theme_choice
         st.rerun() 
-    
     st.divider()
-    
     if sheet_names:
         new_sheet = st.selectbox("Chủ đề:", sheet_names)
         if new_sheet != st.session_state.get('selected_sheet_name'):
@@ -224,28 +190,19 @@ with st.sidebar:
             reset_quiz() 
             st.session_state.recent_history = [] 
             st.rerun()
-    
     st.radio("Chế độ:", ["Anh ➔ Việt", "Việt ➔ Anh", "🗣️ Luyện Phát Âm (Beta)"], key="mode", on_change=reset_quiz)
-    
     auto_play = st.toggle("🔊 Tự động phát âm", value=True)
     use_smart_review = st.checkbox("🧠 Ôn tập thông minh", value=True)
-    
     if st.button("Reset điểm & Thuật toán"):
-        st.session_state.score = 0
-        st.session_state.total = 0
-        st.session_state.word_weights = {} 
-        st.session_state.recent_history = []
-        st.session_state.last_audio_bytes = None
-        st.session_state.combo = 0
-        reset_quiz()
-        st.rerun()
+        st.session_state.score = 0; st.session_state.total = 0; st.session_state.word_weights = {} 
+        st.session_state.recent_history = []; st.session_state.last_audio_bytes = None; st.session_state.combo = 0
+        reset_quiz(); st.rerun()
 
 data = load_data()
 
 # --- LOGIC ---
 def generate_new_question():
     if len(data) < 2: return
-    
     available_pool = data
     if len(data) > 8:
         available_pool = [d for d in data if d[COL_ENG] not in st.session_state.recent_history]
@@ -255,8 +212,7 @@ def generate_new_question():
     if use_smart_review:
         weights = [st.session_state.word_weights.get(d[COL_ENG], 10) for d in available_pool]
         target = random.choices(available_pool, weights=weights, k=1)[0]
-    else:
-        target = random.choice(available_pool)
+    else: target = random.choice(available_pool)
 
     others = random.sample([d for d in data if d != target], min(3, len(data)-1))
     
@@ -271,7 +227,6 @@ def generate_new_question():
         opts = []
 
     if st.session_state.mode != "🗣️ Luyện Phát Âm (Beta)": random.shuffle(opts)
-        
     st.session_state.quiz = {'q': q, 'a': a, 'opts': opts, 'raw_en': target[COL_ENG]}
     st.session_state.current_audio_b64 = get_audio_base64(target[COL_ENG])
     st.session_state.start_time = time.time()
@@ -284,12 +239,9 @@ def handle_answer(selected_opt):
     current_weight = st.session_state.word_weights.get(target_word, 10)
 
     if selected_opt == quiz['a']:
-        st.session_state.score += 1
-        st.session_state.combo += 1 
-        
+        st.session_state.score += 1; st.session_state.combo += 1 
         fire_icon = "🔥" * min(st.session_state.combo, 5) if st.session_state.combo > 1 else "🎉"
         st.session_state.last_result_msg = ("success", f"{fire_icon} Chính xác: {quiz['q']} - {quiz['a']}")
-        
         if use_smart_review:
             if duration < 2.0: new_weight = max(1, current_weight - 3)
             elif duration > 3.5: new_weight = min(100, current_weight + 3)
@@ -301,70 +253,65 @@ def handle_answer(selected_opt):
         st.session_state.word_weights[target_word] = min(100, current_weight + 10)
 
     st.session_state.recent_history.append(target_word)
-    if len(st.session_state.recent_history) > 5:
-        st.session_state.recent_history.pop(0)
-
+    if len(st.session_state.recent_history) > 5: st.session_state.recent_history.pop(0)
     generate_new_question()
 
-# --- GIAO DIỆN ---
+# --- GIAO DIỆN CHÍNH (TỐI ƯU LAYOUT) ---
 st.markdown(f'<h1 class="main-title">🌸 {st.session_state.get("selected_sheet_name", "Loading...")}</h1>', unsafe_allow_html=True)
 
 @st.fragment
 def show_quiz_area():
     if not data: return
-    if st.session_state.quiz is None:
-        generate_new_question()
-        st.rerun()
+    if st.session_state.quiz is None: generate_new_question(); st.rerun()
 
     quiz = st.session_state.quiz
     
-    if st.session_state.combo > 1:
-        st.markdown(f'<div class="combo-text">🔥 COMBO x{st.session_state.combo} 🔥</div>', unsafe_allow_html=True)
+    # 1. HEADER: Thông tin điểm & Combo đưa lên ĐẦU (để đỡ phải cuộn)
+    c1, c2, c3 = st.columns([2, 1, 2])
+    with c1: st.caption(f"🏆 Điểm: **{st.session_state.score}/{st.session_state.total}**")
+    with c2: 
+        if st.session_state.combo > 1: st.markdown(f'<div class="combo-text">🔥 x{st.session_state.combo}</div>', unsafe_allow_html=True)
     
+    # Thanh Progress đưa lên đầu luôn
+    score_val = st.session_state.score / (st.session_state.total if st.session_state.total > 0 else 1)
+    st.progress(score_val)
+
+    # 2. THÔNG BÁO KẾT QUẢ
     if st.session_state.last_result_msg:
         mstype, msg = st.session_state.last_result_msg
         if mstype == "success": st.success(msg, icon="✅")
         else: st.error(msg, icon="⚠️")
         st.session_state.last_result_msg = None
 
-    # Card Câu Hỏi
+    # 3. CARD CÂU HỎI & AUDIO
     st.markdown(f'<div class="main-card"><h1>{quiz["q"]}</h1></div>', unsafe_allow_html=True)
     
-    col1, col2, col3 = st.columns([1, 2, 1])
+    col1, col2, col3 = st.columns([1, 4, 1]) # Audio căn giữa
     with col2:
         if st.session_state.get('current_audio_b64'):
             unique_id = f"audio_{uuid.uuid4()}"
             autoplay_attr = "autoplay" if auto_play else ""
-            st.components.v1.html(f"""<audio id="{unique_id}" src="{st.session_state.current_audio_b64}" {autoplay_attr} controls style="width:100%"></audio>""", height=50)
+            st.components.v1.html(f"""<audio id="{unique_id}" src="{st.session_state.current_audio_b64}" {autoplay_attr} controls style="width:100%"></audio>""", height=40)
 
+    # 4. KHU VỰC TRẢ LỜI (GRID 2x2)
     if st.session_state.mode == "🗣️ Luyện Phát Âm (Beta)":
         c1, c2, c3 = st.columns([1, 1, 1])
         with c2: 
-            audio = mic_recorder(start_prompt="🎙️ Bấm để nói", stop_prompt="⏹️ Dừng", key="static_mic_recorder", format="wav")
+            audio = mic_recorder(start_prompt="🎙️ Nói", stop_prompt="⏹️ Dừng", key="static_mic_recorder", format="wav")
             
         if audio and audio['bytes'] != st.session_state.last_audio_bytes:
             st.session_state.last_audio_bytes = audio['bytes']
             spoken = recognize_speech(audio['bytes'])
             if spoken == quiz['raw_en'].lower().strip():
-                st.session_state.combo += 1
-                st.balloons(); time.sleep(1); generate_new_question(); st.rerun()
-            else: 
-                st.session_state.combo = 0
-                st.error(f"Bạn nói: {spoken}")
-            
-        if st.button("Bỏ qua"): 
-            st.session_state.combo = 0
-            generate_new_question(); st.rerun()
+                st.session_state.combo += 1; st.balloons(); time.sleep(1); generate_new_question(); st.rerun()
+            else: st.session_state.combo = 0; st.error(f"Bạn nói: {spoken}")
+        if st.button("Bỏ qua"): st.session_state.combo = 0; generate_new_question(); st.rerun()
     else:
-        for opt in quiz['opts']: 
-            st.button(opt, key=uuid.uuid4(), on_click=handle_answer, args=(opt,), use_container_width=True)
-        
-        score_val = st.session_state.score / (st.session_state.total if st.session_state.total > 0 else 1)
-        st.progress(score_val)
-        
-        c1, c2 = st.columns(2)
-        with c1: st.caption(f"Điểm số: **{st.session_state.score}/{st.session_state.total}**")
-        with c2: st.caption(f"Chuỗi đúng: **{st.session_state.combo}**")
+        # --- QUY HOẠCH NÚT THÀNH LƯỚI 2x2 CHO GỌN ---
+        col_1, col_2 = st.columns(2)
+        for idx, opt in enumerate(quiz['opts']):
+            with (col_1 if idx % 2 == 0 else col_2): # Chẵn cột trái, Lẻ cột phải
+                st.button(opt, key=uuid.uuid4(), on_click=handle_answer, args=(opt,), use_container_width=True)
 
 show_quiz_area()
 st.markdown(f'<div class="author-text">Made by {AUTHOR} 🌸</div>', unsafe_allow_html=True)
