@@ -239,7 +239,7 @@ def handle_answer(selected_opt):
     if selected_opt == quiz['a']:
         st.session_state.score += 1; st.session_state.combo += 1 
         fire_icon = "🔥" * min(st.session_state.combo, 5) if st.session_state.combo > 1 else "🎉"
-        st.session_state.last_result_msg = ("success", f"{fire_icon} Chính xác: {quiz['q']} - {quiz['a']}")
+        st.session_state.last_result_msg = ("success", f"{fire_icon} Ngon luônnn!: {quiz['q']} - {quiz['a']}")
         if use_smart_review:
             if duration < 2.0: new_weight = max(1, current_weight - 3)
             elif duration > 3.5: new_weight = min(100, current_weight + 3)
@@ -247,7 +247,7 @@ def handle_answer(selected_opt):
             st.session_state.word_weights[target_word] = new_weight
     else:
         st.session_state.combo = 0 
-        st.session_state.last_result_msg = ("error", f"❌ Sai rồi: '{quiz['q']}' là '{quiz['a']}' chứ không phải '{selected_opt}'")
+        st.session_state.last_result_msg = ("error", f"❌ Toang rồi: '{quiz['q']}' là '{quiz['a']}' chứ không phải '{selected_opt}'")
         st.session_state.word_weights[target_word] = min(100, current_weight + 10)
 
     st.session_state.recent_history.append(target_word)
