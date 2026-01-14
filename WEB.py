@@ -123,9 +123,10 @@ if 'last_result_msg' not in st.session_state: st.session_state.last_result_msg =
 if 'word_weights' not in st.session_state: st.session_state.word_weights = {} 
 if 'recent_history' not in st.session_state: st.session_state.recent_history = [] 
 if 'start_time' not in st.session_state: st.session_state.start_time = 0 
-if 'mode' not in st.session_state: st.session_state.mode = "Anh ➔ Việt" # Mặc định
+if 'mode' not in st.session_state: st.session_state.mode = "Anh ➔ Việt" 
+# BIẾN MỚI: Lưu trữ âm thanh cuối cùng để so sánh
+if 'last_audio_bytes' not in st.session_state: st.session_state.last_audio_bytes = None
 
-# --- HÀM RESET KHI ĐỔI CHẾ ĐỘ ---
 def reset_quiz():
     st.session_state.quiz = None
     st.session_state.last_result_msg = None
@@ -145,18 +146,11 @@ with st.sidebar:
         new_sheet = st.selectbox("Chủ đề:", sheet_names)
         if new_sheet != st.session_state.get('selected_sheet_name'):
             st.session_state.selected_sheet_name = new_sheet
-            reset_quiz() # Reset khi đổi sheet
+            reset_quiz() 
             st.session_state.recent_history = [] 
             st.rerun()
     
-    # --- CẬP NHẬT: THÊM on_change ĐỂ TỰ ĐỘNG RESET ---
-    st.radio(
-        "Chế độ:", 
-        ["Anh ➔ Việt", "Việt ➔ Anh", "🗣️ Luyện Phát Âm (Beta)"], 
-        key="mode", # Gắn trực tiếp vào st.session_state.mode
-        on_change=reset_quiz # Gọi hàm reset ngay khi bấm đổi
-    )
-    
+    st.radio("Chế độ:", ["Anh ➔ Việt", "Việt ➔ Anh", "🗣️ Luyện Phát Âm (Beta)"], key="mode", on_change=reset_quiz)
     use_smart_review = st.checkbox("🧠 Ôn tập thông minh", value=True, help="Ưu tiên từ sai và từ bạn suy nghĩ lâu.")
     
     if st.button("Reset điểm & Thuật toán"):
@@ -164,6 +158,7 @@ with st.sidebar:
         st.session_state.total = 0
         st.session_state.word_weights = {} 
         st.session_state.recent_history = []
+        st.session_state.last_audio_bytes = None
         reset_quiz()
         st.rerun()
 
@@ -173,13 +168,11 @@ data = load_data()
 def generate_new_question():
     if len(data) < 2: return
     
-    # 1. Lọc Anti-Repeat
     available_pool = data
     if len(data) > 8:
         available_pool = [d for d in data if d[COL_ENG] not in st.session_state.recent_history]
         if not available_pool: available_pool = data 
 
-    # 2. Chọn từ Smart Review
     target = None
     if use_smart_review:
         weights = [st.session_state.word_weights.get(d[COL_ENG], 10) for d in available_pool]
@@ -187,25 +180,22 @@ def generate_new_question():
     else:
         target = random.choice(available_pool)
 
-    # 3. Tạo đáp án nhiễu
     others = random.sample([d for d in data if d != target], min(3, len(data)-1))
     
-    # Setup câu hỏi theo Mode
     if st.session_state.mode == "Anh ➔ Việt":
         q, a = target[COL_ENG], target[COL_VIE]
         opts = [d[COL_VIE] for d in others] + [a]
     elif st.session_state.mode == "Việt ➔ Anh":
         q, a = target[COL_VIE], target[COL_ENG]
         opts = [d[COL_ENG] for d in others] + [a]
-    else: # Chế độ Phát âm
+    else:
         q, a = target[COL_ENG], target[COL_VIE]
-        opts = [] # Danh sách rỗng
+        opts = []
 
     if st.session_state.mode != "🗣️ Luyện Phát Âm (Beta)": random.shuffle(opts)
         
     st.session_state.quiz = {'q': q, 'a': a, 'opts': opts, 'raw_en': target[COL_ENG]}
     st.session_state.current_audio_b64 = get_audio_base64(target[COL_ENG])
-    
     st.session_state.start_time = time.time()
 
 def handle_answer(selected_opt):
@@ -239,8 +229,6 @@ st.markdown(f'<h1 class="main-title">🌸 {st.session_state.get("selected_sheet_
 @st.fragment
 def show_quiz_area():
     if not data: return
-    
-    # Tự động tạo câu hỏi nếu chưa có
     if st.session_state.quiz is None:
         generate_new_question()
         st.rerun()
@@ -263,12 +251,20 @@ def show_quiz_area():
 
     if st.session_state.mode == "🗣️ Luyện Phát Âm (Beta)":
         c1, c2, c3 = st.columns([1, 1, 1])
-        with c2: audio = mic_recorder(start_prompt="🎙️ Nói", stop_prompt="⏹️ Dừng", key=f"mic_{quiz['raw_en']}")
-        if audio:
+        with c2: 
+            # FIX: Dùng key TĨNH để không bị reset mic component
+            audio = mic_recorder(start_prompt="🎙️ Bấm để nói", stop_prompt="⏹️ Dừng", key="static_mic_recorder", format="wav")
+            
+        # LOGIC XỬ LÝ ÂM THANH MỚI
+        if audio and audio['bytes'] != st.session_state.last_audio_bytes:
+            # Nếu có âm thanh và âm thanh này KHÁC âm thanh cũ -> Xử lý
+            st.session_state.last_audio_bytes = audio['bytes'] # Lưu lại để lần sau so sánh
+            
             spoken = recognize_speech(audio['bytes'])
             if spoken == quiz['raw_en'].lower().strip():
                 st.balloons(); time.sleep(1); generate_new_question(); st.rerun()
             else: st.error(f"Bạn nói: {spoken}")
+            
         if st.button("Bỏ qua"): generate_new_question(); st.rerun()
     else:
         for opt in quiz['opts']: 
