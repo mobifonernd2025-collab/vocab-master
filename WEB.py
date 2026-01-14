@@ -8,7 +8,7 @@ import time
 import base64
 from gtts import gTTS
 
-# --- KIỂM TRA THƯ VIỆN LUYỆN NÓI ---
+# --- KIỂM TRA THƯ VIỆN ---
 try:
     import speech_recognition as sr
     from streamlit_mic_recorder import mic_recorder
@@ -24,73 +24,109 @@ AUTHOR = "Thanh Xuân"
 
 st.set_page_config(page_title=f"Vocab Master - {AUTHOR}", page_icon="🌸", layout="centered")
 
-# --- CSS ---
-st.markdown("""
-    <style>
-    .stApp { background-color: #FFF0F5; }
-    div[data-testid="stVerticalBlock"] { opacity: 1 !important; transition: none !important; }
-    .element-container { opacity: 1 !important; transition: none !important; }
-    div[data-testid="stStatusWidget"] { visibility: hidden; }
+# --- QUẢN LÝ THEME (MÀU SẮC) ---
+if 'dark_mode' not in st.session_state: st.session_state.dark_mode = False
 
-    .main-title { font-size: 30px !important; font-weight: 800 !important; color: #C71585 !important; text-align: center; margin-bottom: 5px; }
+# Định nghĩa màu sắc cho 2 chế độ
+if st.session_state.dark_mode:
+    # DARK MODE
+    THEME = {
+        "bg": "#0E1117",            # Nền đen dịu
+        "card_bg": "#262730",       # Nền thẻ xám đậm
+        "text": "#FAFAFA",          # Chữ trắng sáng
+        "sub_text": "#A0A0A0",      # Chữ phụ xám nhạt
+        "border": "#4A4A4A",        # Viền xám
+        "btn_bg": "#262730",        # Nền nút tối
+        "btn_hover": "#FF4B4B",     # Hover màu đỏ Streamlit (nổi bật)
+        "btn_text": "#FAFAFA"       # Chữ nút trắng
+    }
+else:
+    # LIGHT MODE (SAKURA)
+    THEME = {
+        "bg": "#FFF0F5",            # Nền hồng phấn
+        "card_bg": "#ffffff",       # Nền thẻ trắng
+        "text": "#C71585",          # Chữ hồng đậm
+        "sub_text": "#C71585",      # Chữ phụ hồng đậm
+        "border": "#FFB6C1",        # Viền hồng nhạt
+        "btn_bg": "#ffffff",        # Nền nút trắng
+        "btn_hover": "#FFB6C1",     # Hover hồng nhạt
+        "btn_text": "#C71585"       # Chữ nút hồng đậm
+    }
+
+# --- CSS ĐỘNG (Dựa theo Theme đang chọn) ---
+st.markdown(f"""
+    <style>
+    .stApp {{ background-color: {THEME['bg']}; }}
+    div[data-testid="stVerticalBlock"] {{ opacity: 1 !important; transition: none !important; }}
+    .element-container {{ opacity: 1 !important; transition: none !important; }}
+    div[data-testid="stStatusWidget"] {{ visibility: hidden; }}
+
+    .main-title {{ font-size: 30px !important; font-weight: 800 !important; color: {THEME['text']} !important; text-align: center; margin-bottom: 5px; }}
     
-    .main-card { 
-        background-color: #ffffff; 
+    .main-card {{ 
+        background-color: {THEME['card_bg']}; 
         padding: 15px; 
         border-radius: 20px; 
         text-align: center; 
-        box-shadow: 0 5px 15px rgba(0,0,0,0.05); 
-        border-top: 8px solid #FFB6C1; 
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1); 
+        border-top: 8px solid {THEME['border']}; 
         margin-bottom: 20px; 
-    }
+    }}
     
-    div[data-testid="stAlert"] {
+    /* Chỉnh màu chữ câu hỏi trong card */
+    .main-card h1 {{ color: {THEME['text']} !important; }}
+
+    div[data-testid="stAlert"] {{
         font-size: 1.3rem !important; 
         font-weight: 700 !important;
         padding: 1rem !important;
-    }
+    }}
 
     /* Style nút chung */
-    div.stButton > button { 
+    div.stButton > button {{ 
         height: 3.2em !important; font-size: 22px !important; 
         border-radius: 12px !important; font-weight: 600 !important; 
-        background-color: #ffffff; border: 2px solid #FFB6C1 !important; 
-        color: #C71585 !important; width: 100%; margin-bottom: 8px;
+        background-color: {THEME['btn_bg']}; 
+        border: 2px solid {THEME['border']} !important; 
+        color: {THEME['btn_text']} !important; 
+        width: 100%; margin-bottom: 8px;
         transition: transform 0.1s;
         -webkit-tap-highlight-color: transparent; 
         outline: none !important;
-    }
+    }}
 
-    @media (hover: hover) {
-        div.stButton > button:hover { background-color: #FFB6C1 !important; color: white !important; }
-    }
+    /* Hover trên máy tính */
+    @media (hover: hover) {{
+        div.stButton > button:hover {{ background-color: {THEME['btn_hover']} !important; color: white !important; }}
+    }}
 
-    @media (hover: none) {
+    /* Active trên điện thoại */
+    @media (hover: none) {{
         div.stButton > button:hover, 
-        div.stButton > button:focus { 
-            background-color: #ffffff !important; 
-            color: #C71585 !important; 
-            border-color: #FFB6C1 !important;
+        div.stButton > button:focus {{ 
+            background-color: {THEME['btn_bg']} !important; 
+            color: {THEME['btn_text']} !important; 
+            border-color: {THEME['border']} !important;
             box-shadow: none !important;
-        }
-        div.stButton > button:active { 
-            background-color: #FFB6C1 !important; 
+        }}
+        div.stButton > button:active {{ 
+            background-color: {THEME['btn_hover']} !important; 
             color: white !important; 
             transform: scale(0.96); 
-        }
-    }
+        }}
+    }}
     
-    /* Style cho Combo */
-    .combo-text {
-        text-align: center;
-        font-size: 1.2em;
-        font-weight: bold;
-        color: #FF4500;
-        margin-bottom: 10px;
+    .combo-text {{
+        text-align: center; font-size: 1.2em; font-weight: bold;
+        color: #FF4500; margin-bottom: 10px;
         animation: pulse 0.5s infinite alternate;
-    }
+    }}
 
-    .author-text { text-align: center; color: #C71585; font-size: 0.9em; margin-top: 20px; opacity: 0.7; }
+    .author-text {{ text-align: center; color: {THEME['sub_text']}; font-size: 0.9em; margin-top: 20px; opacity: 0.7; }}
+    
+    /* Chỉnh màu text phụ (caption, label) */
+    p, label {{ color: {THEME['text']} !important; }}
+    .stCaption {{ color: {THEME['sub_text']} !important; }}
     </style>
     """, unsafe_allow_html=True)
 
@@ -149,13 +185,12 @@ if 'recent_history' not in st.session_state: st.session_state.recent_history = [
 if 'start_time' not in st.session_state: st.session_state.start_time = 0 
 if 'mode' not in st.session_state: st.session_state.mode = "Anh ➔ Việt" 
 if 'last_audio_bytes' not in st.session_state: st.session_state.last_audio_bytes = None
-# BIẾN MỚI: Combo
 if 'combo' not in st.session_state: st.session_state.combo = 0
 
 def reset_quiz():
     st.session_state.quiz = None
     st.session_state.last_result_msg = None
-    st.session_state.combo = 0 # Reset combo khi đổi chế độ
+    st.session_state.combo = 0
 
 # --- SIDEBAR ---
 client = get_gspread_client()
@@ -168,6 +203,16 @@ except: sheet_names = []
 
 with st.sidebar:
     st.title("⚙️ Cài đặt")
+    
+    # --- NÚT CHUYỂN GIAO DIỆN ---
+    st.markdown("### 🎨 Giao diện")
+    is_dark = st.toggle("🌙 Chế độ tối", value=st.session_state.dark_mode)
+    if is_dark != st.session_state.dark_mode:
+        st.session_state.dark_mode = is_dark
+        st.rerun() # Load lại trang để áp dụng màu mới
+    
+    st.divider() # Đường kẻ phân cách
+    
     if sheet_names:
         new_sheet = st.selectbox("Chủ đề:", sheet_names)
         if new_sheet != st.session_state.get('selected_sheet_name'):
@@ -178,9 +223,7 @@ with st.sidebar:
     
     st.radio("Chế độ:", ["Anh ➔ Việt", "Việt ➔ Anh", "🗣️ Luyện Phát Âm (Beta)"], key="mode", on_change=reset_quiz)
     
-    # NÚT BẬT/TẮT AUDIO
     auto_play = st.toggle("🔊 Tự động phát âm", value=True)
-    
     use_smart_review = st.checkbox("🧠 Ôn tập thông minh", value=True)
     
     if st.button("Reset điểm & Thuật toán"):
@@ -238,9 +281,8 @@ def handle_answer(selected_opt):
 
     if selected_opt == quiz['a']:
         st.session_state.score += 1
-        st.session_state.combo += 1 # Tăng combo
+        st.session_state.combo += 1 
         
-        # Thêm icon lửa vào thông báo nếu combo cao
         fire_icon = "🔥" * min(st.session_state.combo, 5) if st.session_state.combo > 1 else "🎉"
         st.session_state.last_result_msg = ("success", f"{fire_icon} Chính xác: {quiz['q']} - {quiz['a']}")
         
@@ -250,7 +292,7 @@ def handle_answer(selected_opt):
             else: new_weight = max(1, current_weight - 1)
             st.session_state.word_weights[target_word] = new_weight
     else:
-        st.session_state.combo = 0 # Reset combo
+        st.session_state.combo = 0 
         st.session_state.last_result_msg = ("error", f"❌ Sai rồi: '{quiz['q']}' là '{quiz['a']}' chứ không phải '{selected_opt}'")
         st.session_state.word_weights[target_word] = min(100, current_weight + 10)
 
@@ -272,7 +314,6 @@ def show_quiz_area():
 
     quiz = st.session_state.quiz
     
-    # HIỂN THỊ COMBO
     if st.session_state.combo > 1:
         st.markdown(f'<div class="combo-text">🔥 COMBO x{st.session_state.combo} 🔥</div>', unsafe_allow_html=True)
     
@@ -282,15 +323,13 @@ def show_quiz_area():
         else: st.error(msg, icon="⚠️")
         st.session_state.last_result_msg = None
 
-    # Card Câu Hỏi
-    st.markdown(f'<div class="main-card"><h1 style="color: #333; font-size: 1.8em; margin: 0;">{quiz["q"]}</h1></div>', unsafe_allow_html=True)
+    # Card Câu Hỏi (Màu chữ tự động thay đổi theo Theme)
+    st.markdown(f'<div class="main-card"><h1>{quiz["q"]}</h1></div>', unsafe_allow_html=True)
     
-    # AUDIO VỚI TÙY CHỌN BẬT/TẮT
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         if st.session_state.get('current_audio_b64'):
             unique_id = f"audio_{uuid.uuid4()}"
-            # Nếu auto_play = True thì thêm thuộc tính autoplay, ngược lại thì không
             autoplay_attr = "autoplay" if auto_play else ""
             st.components.v1.html(f"""<audio id="{unique_id}" src="{st.session_state.current_audio_b64}" {autoplay_attr} controls style="width:100%"></audio>""", height=50)
 
@@ -303,24 +342,22 @@ def show_quiz_area():
             st.session_state.last_audio_bytes = audio['bytes']
             spoken = recognize_speech(audio['bytes'])
             if spoken == quiz['raw_en'].lower().strip():
-                st.session_state.combo += 1 # Tăng combo khi nói đúng
+                st.session_state.combo += 1
                 st.balloons(); time.sleep(1); generate_new_question(); st.rerun()
             else: 
-                st.session_state.combo = 0 # Reset combo khi nói sai
+                st.session_state.combo = 0
                 st.error(f"Bạn nói: {spoken}")
             
         if st.button("Bỏ qua"): 
-            st.session_state.combo = 0 # Bỏ qua cũng mất combo
+            st.session_state.combo = 0
             generate_new_question(); st.rerun()
     else:
         for opt in quiz['opts']: 
             st.button(opt, key=uuid.uuid4(), on_click=handle_answer, args=(opt,), use_container_width=True)
         
-        # Thanh progress
         score_val = st.session_state.score / (st.session_state.total if st.session_state.total > 0 else 1)
         st.progress(score_val)
         
-        # Thống kê nhỏ bên dưới
         c1, c2 = st.columns(2)
         with c1: st.caption(f"Điểm số: **{st.session_state.score}/{st.session_state.total}**")
         with c2: st.caption(f"Chuỗi đúng: **{st.session_state.combo}**")
