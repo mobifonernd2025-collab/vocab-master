@@ -46,10 +46,9 @@ st.markdown(f"""
     .element-container {{ opacity: 1 !important; transition: none !important; }}
     div[data-testid="stStatusWidget"] {{ visibility: hidden; }}
 
-    /* Tiêu đề nhỏ gọn hơn */
     .main-title {{ font-size: 24px !important; font-weight: 800 !important; color: {THEME['text']} !important; text-align: center; margin-bottom: 0px; }}
     
-    /* Card câu hỏi: Giảm padding để gọn */
+    /* Card câu hỏi */
     .main-card {{ 
         background-color: {THEME['card_bg']}; 
         padding: 10px; 
@@ -57,22 +56,22 @@ st.markdown(f"""
         text-align: center; 
         box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
         border-top: 5px solid {THEME['border']}; 
-        margin-bottom: 10px; 
+        margin-bottom: 5px; 
         margin-top: 5px;
     }}
     
-    .main-card h1 {{ color: {THEME['text']} !important; font-size: 1.6em !important; margin: 0 !important; }}
+    .main-card h1 {{ color: {THEME['text']} !important; font-size: 1.8em !important; margin: 0 !important; }}
 
-    /* Thông báo kết quả gọn hơn */
     div[data-testid="stAlert"] {{
         padding: 0.5rem 1rem !important;
         margin-bottom: 0.5rem !important;
+        font-size: 1.1rem !important;
     }}
 
-    /* Nút bấm: Giảm chiều cao một chút */
+    /* Nút bấm */
     div.stButton > button {{ 
-        height: 3em !important; 
-        font-size: 18px !important; /* Chữ nhỏ lại xíu cho vừa mobile */
+        height: 3.2em !important; 
+        font-size: 18px !important; 
         border-radius: 10px !important; font-weight: 600 !important; 
         background-color: {THEME['btn_bg']}; 
         border: 2px solid {THEME['border']} !important; 
@@ -81,7 +80,7 @@ st.markdown(f"""
         transition: transform 0.1s;
         -webkit-tap-highlight-color: transparent; 
         outline: none !important;
-        white-space: normal !important; /* Cho phép xuống dòng nếu đáp án dài */
+        white-space: normal !important;
         padding: 2px 5px !important;
     }}
 
@@ -256,7 +255,7 @@ def handle_answer(selected_opt):
     if len(st.session_state.recent_history) > 5: st.session_state.recent_history.pop(0)
     generate_new_question()
 
-# --- GIAO DIỆN CHÍNH (TỐI ƯU LAYOUT) ---
+# --- GIAO DIỆN CHÍNH (TỐI ƯU AUDIO) ---
 st.markdown(f'<h1 class="main-title">🌸 {st.session_state.get("selected_sheet_name", "Loading...")}</h1>', unsafe_allow_html=True)
 
 @st.fragment
@@ -266,34 +265,42 @@ def show_quiz_area():
 
     quiz = st.session_state.quiz
     
-    # 1. HEADER: Thông tin điểm & Combo đưa lên ĐẦU (để đỡ phải cuộn)
+    # 1. HEADER
     c1, c2, c3 = st.columns([2, 1, 2])
     with c1: st.caption(f"🏆 Điểm: **{st.session_state.score}/{st.session_state.total}**")
     with c2: 
         if st.session_state.combo > 1: st.markdown(f'<div class="combo-text">🔥 x{st.session_state.combo}</div>', unsafe_allow_html=True)
     
-    # Thanh Progress đưa lên đầu luôn
     score_val = st.session_state.score / (st.session_state.total if st.session_state.total > 0 else 1)
     st.progress(score_val)
 
-    # 2. THÔNG BÁO KẾT QUẢ
+    # 2. THÔNG BÁO
     if st.session_state.last_result_msg:
         mstype, msg = st.session_state.last_result_msg
         if mstype == "success": st.success(msg, icon="✅")
         else: st.error(msg, icon="⚠️")
         st.session_state.last_result_msg = None
 
-    # 3. CARD CÂU HỎI & AUDIO
+    # 3. CARD CÂU HỎI
     st.markdown(f'<div class="main-card"><h1>{quiz["q"]}</h1></div>', unsafe_allow_html=True)
     
-    col1, col2, col3 = st.columns([1, 4, 1]) # Audio căn giữa
+    # 4. AUDIO PLAYER (ĐÃ FIX TO HƠN, KHÔNG BỊ ĐÈ)
+    # Tăng tỷ lệ cột giữa lên 9 để audio trải dài hết cỡ
+    col1, col2, col3 = st.columns([0.5, 9, 0.5]) 
     with col2:
         if st.session_state.get('current_audio_b64'):
             unique_id = f"audio_{uuid.uuid4()}"
             autoplay_attr = "autoplay" if auto_play else ""
-            st.components.v1.html(f"""<audio id="{unique_id}" src="{st.session_state.current_audio_b64}" {autoplay_attr} controls style="width:100%"></audio>""", height=40)
+            # Chú ý: transform: scale(1.3) để phóng to, height=80 để không bị cắt
+            html_audio = f"""
+                <div style="display: flex; justify-content: center; align-items: center; margin-top: 10px; margin-bottom: 10px;">
+                    <audio id="{unique_id}" src="{st.session_state.current_audio_b64}" {autoplay_attr} controls 
+                    style="width: 100%; height: 50px; transform: scale(1.3); transform-origin: center;"></audio>
+                </div>
+            """
+            st.components.v1.html(html_audio, height=80)
 
-    # 4. KHU VỰC TRẢ LỜI (GRID 2x2)
+    # 5. KHU VỰC TRẢ LỜI
     if st.session_state.mode == "🗣️ Luyện Phát Âm (Beta)":
         c1, c2, c3 = st.columns([1, 1, 1])
         with c2: 
@@ -307,10 +314,10 @@ def show_quiz_area():
             else: st.session_state.combo = 0; st.error(f"Bạn nói: {spoken}")
         if st.button("Bỏ qua"): st.session_state.combo = 0; generate_new_question(); st.rerun()
     else:
-        # --- QUY HOẠCH NÚT THÀNH LƯỚI 2x2 CHO GỌN ---
+        # LƯỚI NÚT BẤM 2x2
         col_1, col_2 = st.columns(2)
         for idx, opt in enumerate(quiz['opts']):
-            with (col_1 if idx % 2 == 0 else col_2): # Chẵn cột trái, Lẻ cột phải
+            with (col_1 if idx % 2 == 0 else col_2): 
                 st.button(opt, key=uuid.uuid4(), on_click=handle_answer, args=(opt,), use_container_width=True)
 
 show_quiz_area()
