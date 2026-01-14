@@ -24,7 +24,7 @@ AUTHOR = "Thanh Xuân"
 
 st.set_page_config(page_title=f"Vocab Master - {AUTHOR}", page_icon="🌸", layout="centered")
 
-# --- CSS (ĐÃ FIX LỖI MOBILE & DÍNH MÀU) ---
+# --- CSS (ĐÃ FIX LỖI MOBILE + TỐI ƯU GIAO DIỆN) ---
 st.markdown("""
     <style>
     .stApp { background-color: #FFF0F5; }
@@ -33,8 +33,26 @@ st.markdown("""
     div[data-testid="stStatusWidget"] { visibility: hidden; }
 
     .main-title { font-size: 30px !important; font-weight: 800 !important; color: #C71585 !important; text-align: center; margin-bottom: 5px; }
-    .main-card { background-color: #ffffff; padding: 20px; border-radius: 20px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.05); border-top: 8px solid #FFB6C1; margin-bottom: 20px; }
     
+    /* Card chứa câu hỏi */
+    .main-card { 
+        background-color: #ffffff; 
+        padding: 15px; /* Giảm padding một chút cho gọn */
+        border-radius: 20px; 
+        text-align: center; 
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05); 
+        border-top: 8px solid #FFB6C1; 
+        margin-bottom: 20px; 
+    }
+    
+    /* --- TÙY CHỈNH THÔNG BÁO KẾT QUẢ (TO HƠN) --- */
+    div[data-testid="stAlert"] {
+        font-size: 1.3rem !important; /* Tăng kích thước chữ kết quả */
+        font-weight: 700 !important;   /* In đậm */
+        padding: 1rem !important;
+    }
+
+    /* Style nút chung */
     div.stButton > button { 
         height: 3.2em !important; font-size: 22px !important; 
         border-radius: 12px !important; font-weight: 600 !important; 
@@ -65,8 +83,6 @@ st.markdown("""
     }
 
     .author-text { text-align: center; color: #C71585; font-size: 0.9em; margin-top: 20px; opacity: 0.7; }
-    .speech-result-success { color: green; font-weight: bold; font-size: 1.2em; text-align: center; }
-    .speech-result-fail { color: red; font-weight: bold; font-size: 1.2em; text-align: center; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -124,7 +140,6 @@ if 'word_weights' not in st.session_state: st.session_state.word_weights = {}
 if 'recent_history' not in st.session_state: st.session_state.recent_history = [] 
 if 'start_time' not in st.session_state: st.session_state.start_time = 0 
 if 'mode' not in st.session_state: st.session_state.mode = "Anh ➔ Việt" 
-# BIẾN MỚI: Lưu trữ âm thanh cuối cùng để so sánh
 if 'last_audio_bytes' not in st.session_state: st.session_state.last_audio_bytes = None
 
 def reset_quiz():
@@ -241,7 +256,8 @@ def show_quiz_area():
         else: st.error(msg, icon="⚠️")
         st.session_state.last_result_msg = None
 
-    st.markdown(f'<div class="main-card"><h1 style="color: #333; font-size: 2.8em; margin: 0;">{quiz["q"]}</h1></div>', unsafe_allow_html=True)
+    # Card Câu Hỏi (Đã chỉnh font nhỏ hơn: 1.8em)
+    st.markdown(f'<div class="main-card"><h1 style="color: #333; font-size: 1.8em; margin: 0;">{quiz["q"]}</h1></div>', unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
@@ -252,14 +268,10 @@ def show_quiz_area():
     if st.session_state.mode == "🗣️ Luyện Phát Âm (Beta)":
         c1, c2, c3 = st.columns([1, 1, 1])
         with c2: 
-            # FIX: Dùng key TĨNH để không bị reset mic component
             audio = mic_recorder(start_prompt="🎙️ Bấm để nói", stop_prompt="⏹️ Dừng", key="static_mic_recorder", format="wav")
             
-        # LOGIC XỬ LÝ ÂM THANH MỚI
         if audio and audio['bytes'] != st.session_state.last_audio_bytes:
-            # Nếu có âm thanh và âm thanh này KHÁC âm thanh cũ -> Xử lý
-            st.session_state.last_audio_bytes = audio['bytes'] # Lưu lại để lần sau so sánh
-            
+            st.session_state.last_audio_bytes = audio['bytes']
             spoken = recognize_speech(audio['bytes'])
             if spoken == quiz['raw_en'].lower().strip():
                 st.balloons(); time.sleep(1); generate_new_question(); st.rerun()
