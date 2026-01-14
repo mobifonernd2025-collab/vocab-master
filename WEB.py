@@ -24,7 +24,7 @@ AUTHOR = "Thanh Xuân"
 
 st.set_page_config(page_title=f"Vocab Master - {AUTHOR}", page_icon="🌸", layout="centered")
 
-# --- QUẢN LÝ THEME (MÀU SẮC) ---
+# --- QUẢN LÝ THEME ---
 if 'theme_mode' not in st.session_state: st.session_state.theme_mode = "Sakura (Hồng)"
 
 if st.session_state.theme_mode == "Mint (Xanh Dịu)":
@@ -38,7 +38,7 @@ else:
         "border": "#FFB6C1", "btn_bg": "#ffffff", "btn_hover": "#FFB6C1", "btn_text": "#C71585", "progress": "#FF69B4"
     }
 
-# --- CSS TỐI ƯU CHO MOBILE ---
+# --- CSS TỐI ƯU ---
 st.markdown(f"""
     <style>
     .stApp {{ background-color: {THEME['bg']}; }}
@@ -48,7 +48,6 @@ st.markdown(f"""
 
     .main-title {{ font-size: 24px !important; font-weight: 800 !important; color: {THEME['text']} !important; text-align: center; margin-bottom: 0px; }}
     
-    /* Card câu hỏi */
     .main-card {{ 
         background-color: {THEME['card_bg']}; 
         padding: 10px; 
@@ -68,7 +67,6 @@ st.markdown(f"""
         font-size: 1.1rem !important;
     }}
 
-    /* Nút bấm */
     div.stButton > button {{ 
         height: 3.2em !important; 
         font-size: 18px !important; 
@@ -255,7 +253,7 @@ def handle_answer(selected_opt):
     if len(st.session_state.recent_history) > 5: st.session_state.recent_history.pop(0)
     generate_new_question()
 
-# --- GIAO DIỆN CHÍNH (TỐI ƯU AUDIO) ---
+# --- GIAO DIỆN CHÍNH (ĐÃ CÁCH LY AUDIO VÀ NÚT) ---
 st.markdown(f'<h1 class="main-title">🌸 {st.session_state.get("selected_sheet_name", "Loading...")}</h1>', unsafe_allow_html=True)
 
 @st.fragment
@@ -265,42 +263,43 @@ def show_quiz_area():
 
     quiz = st.session_state.quiz
     
-    # 1. HEADER
+    # Header
     c1, c2, c3 = st.columns([2, 1, 2])
     with c1: st.caption(f"🏆 Điểm: **{st.session_state.score}/{st.session_state.total}**")
     with c2: 
         if st.session_state.combo > 1: st.markdown(f'<div class="combo-text">🔥 x{st.session_state.combo}</div>', unsafe_allow_html=True)
-    
     score_val = st.session_state.score / (st.session_state.total if st.session_state.total > 0 else 1)
     st.progress(score_val)
 
-    # 2. THÔNG BÁO
+    # Thông báo
     if st.session_state.last_result_msg:
         mstype, msg = st.session_state.last_result_msg
         if mstype == "success": st.success(msg, icon="✅")
         else: st.error(msg, icon="⚠️")
         st.session_state.last_result_msg = None
 
-    # 3. CARD CÂU HỎI
+    # Card Câu Hỏi
     st.markdown(f'<div class="main-card"><h1>{quiz["q"]}</h1></div>', unsafe_allow_html=True)
     
-    # 4. AUDIO PLAYER (ĐÃ FIX TO HƠN, KHÔNG BỊ ĐÈ)
-    # Tăng tỷ lệ cột giữa lên 9 để audio trải dài hết cỡ
+    # AUDIO (Đã thêm margin-bottom để đẩy nút xuống)
     col1, col2, col3 = st.columns([0.5, 9, 0.5]) 
     with col2:
         if st.session_state.get('current_audio_b64'):
             unique_id = f"audio_{uuid.uuid4()}"
             autoplay_attr = "autoplay" if auto_play else ""
-            # Chú ý: transform: scale(1.3) để phóng to, height=80 để không bị cắt
+            # Thêm margin-bottom: 25px để không đè nút
             html_audio = f"""
-                <div style="display: flex; justify-content: center; align-items: center; margin-top: 10px; margin-bottom: 10px;">
+                <div style="display: flex; justify-content: center; align-items: center; margin-top: 5px; margin-bottom: 25px;">
                     <audio id="{unique_id}" src="{st.session_state.current_audio_b64}" {autoplay_attr} controls 
                     style="width: 100%; height: 50px; transform: scale(1.3); transform-origin: center;"></audio>
                 </div>
             """
             st.components.v1.html(html_audio, height=80)
 
-    # 5. KHU VỰC TRẢ LỜI
+    # Khoảng cách an toàn (Double check)
+    st.write("") 
+
+    # KHU VỰC TRẢ LỜI
     if st.session_state.mode == "🗣️ Luyện Phát Âm (Beta)":
         c1, c2, c3 = st.columns([1, 1, 1])
         with c2: 
