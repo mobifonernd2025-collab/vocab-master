@@ -25,23 +25,24 @@ AUTHOR = "Thanh Xuân"
 st.set_page_config(page_title=f"Vocab Master - {AUTHOR}", page_icon="🌸", layout="centered")
 
 # --- QUẢN LÝ THEME (MÀU SẮC) ---
-if 'dark_mode' not in st.session_state: st.session_state.dark_mode = False
+if 'theme_mode' not in st.session_state: st.session_state.theme_mode = "Sakura (Hồng)"
 
 # Định nghĩa màu sắc cho 2 chế độ
-if st.session_state.dark_mode:
-    # DARK MODE
+if st.session_state.theme_mode == "Mint (Xanh Dịu)":
+    # THEME XANH MINT (Dịu mắt, Tươi mát)
     THEME = {
-        "bg": "#0E1117",            # Nền đen dịu
-        "card_bg": "#262730",       # Nền thẻ xám đậm
-        "text": "#FAFAFA",          # Chữ trắng sáng
-        "sub_text": "#A0A0A0",      # Chữ phụ xám nhạt
-        "border": "#4A4A4A",        # Viền xám
-        "btn_bg": "#262730",        # Nền nút tối
-        "btn_hover": "#FF4B4B",     # Hover màu đỏ Streamlit (nổi bật)
-        "btn_text": "#FAFAFA"       # Chữ nút trắng
+        "bg": "#E0F7FA",            # Nền xanh bạc hà cực nhạt
+        "card_bg": "#ffffff",       # Nền thẻ trắng
+        "text": "#00695C",          # Chữ xanh cổ vịt đậm (dễ đọc)
+        "sub_text": "#00897B",      # Chữ phụ xanh nhẹ hơn
+        "border": "#4DB6AC",        # Viền xanh ngọc
+        "btn_bg": "#ffffff",        # Nền nút trắng
+        "btn_hover": "#B2DFDB",     # Hover xanh nhạt
+        "btn_text": "#00695C",      # Chữ nút xanh đậm
+        "progress": "#009688"       # Màu thanh tiến độ
     }
 else:
-    # LIGHT MODE (SAKURA)
+    # THEME SAKURA (Hồng Phấn - Cũ)
     THEME = {
         "bg": "#FFF0F5",            # Nền hồng phấn
         "card_bg": "#ffffff",       # Nền thẻ trắng
@@ -50,10 +51,11 @@ else:
         "border": "#FFB6C1",        # Viền hồng nhạt
         "btn_bg": "#ffffff",        # Nền nút trắng
         "btn_hover": "#FFB6C1",     # Hover hồng nhạt
-        "btn_text": "#C71585"       # Chữ nút hồng đậm
+        "btn_text": "#C71585",      # Chữ nút hồng đậm
+        "progress": "#FF69B4"       # Màu thanh tiến độ
     }
 
-# --- CSS ĐỘNG (Dựa theo Theme đang chọn) ---
+# --- CSS ĐỘNG ---
 st.markdown(f"""
     <style>
     .stApp {{ background-color: {THEME['bg']}; }}
@@ -68,12 +70,11 @@ st.markdown(f"""
         padding: 15px; 
         border-radius: 20px; 
         text-align: center; 
-        box-shadow: 0 5px 15px rgba(0,0,0,0.1); 
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08); 
         border-top: 8px solid {THEME['border']}; 
         margin-bottom: 20px; 
     }}
     
-    /* Chỉnh màu chữ câu hỏi trong card */
     .main-card h1 {{ color: {THEME['text']} !important; }}
 
     div[data-testid="stAlert"] {{
@@ -97,7 +98,7 @@ st.markdown(f"""
 
     /* Hover trên máy tính */
     @media (hover: hover) {{
-        div.stButton > button:hover {{ background-color: {THEME['btn_hover']} !important; color: white !important; }}
+        div.stButton > button:hover {{ background-color: {THEME['btn_hover']} !important; color: {THEME['text']} !important; }}
     }}
 
     /* Active trên điện thoại */
@@ -111,7 +112,6 @@ st.markdown(f"""
         }}
         div.stButton > button:active {{ 
             background-color: {THEME['btn_hover']} !important; 
-            color: white !important; 
             transform: scale(0.96); 
         }}
     }}
@@ -124,9 +124,11 @@ st.markdown(f"""
 
     .author-text {{ text-align: center; color: {THEME['sub_text']}; font-size: 0.9em; margin-top: 20px; opacity: 0.7; }}
     
-    /* Chỉnh màu text phụ (caption, label) */
     p, label {{ color: {THEME['text']} !important; }}
     .stCaption {{ color: {THEME['sub_text']} !important; }}
+    
+    /* Màu thanh Progress bar */
+    .stProgress > div > div > div > div {{ background-color: {THEME['progress']} !important; }}
     </style>
     """, unsafe_allow_html=True)
 
@@ -204,14 +206,16 @@ except: sheet_names = []
 with st.sidebar:
     st.title("⚙️ Cài đặt")
     
-    # --- NÚT CHUYỂN GIAO DIỆN ---
+    # --- NÚT CHUYỂN GIAO DIỆN (DROPDOWN) ---
     st.markdown("### 🎨 Giao diện")
-    is_dark = st.toggle("🌙 Chế độ tối", value=st.session_state.dark_mode)
-    if is_dark != st.session_state.dark_mode:
-        st.session_state.dark_mode = is_dark
-        st.rerun() # Load lại trang để áp dụng màu mới
+    # Thay Toggle bằng Selectbox để chọn màu rõ ràng hơn
+    theme_choice = st.selectbox("Chọn màu:", ["Sakura (Hồng)", "Mint (Xanh Dịu)"], index=0 if st.session_state.theme_mode == "Sakura (Hồng)" else 1)
     
-    st.divider() # Đường kẻ phân cách
+    if theme_choice != st.session_state.theme_mode:
+        st.session_state.theme_mode = theme_choice
+        st.rerun() 
+    
+    st.divider()
     
     if sheet_names:
         new_sheet = st.selectbox("Chủ đề:", sheet_names)
@@ -323,7 +327,7 @@ def show_quiz_area():
         else: st.error(msg, icon="⚠️")
         st.session_state.last_result_msg = None
 
-    # Card Câu Hỏi (Màu chữ tự động thay đổi theo Theme)
+    # Card Câu Hỏi
     st.markdown(f'<div class="main-card"><h1>{quiz["q"]}</h1></div>', unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns([1, 2, 1])
