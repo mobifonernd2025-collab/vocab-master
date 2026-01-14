@@ -195,6 +195,13 @@ with st.sidebar:
         st.session_state.score = 0; st.session_state.total = 0; st.session_state.word_weights = {} 
         st.session_state.recent_history = []; st.session_state.last_audio_bytes = None; st.session_state.combo = 0
         reset_quiz(); st.rerun()
+    st.divider()
+    st.markdown("""
+        <div style='text-align: center; color: gray; font-size: 0.9em;'>
+            <b>Thanh Xuân MobiFone HighTech</b><br>
+            <i>Phiên bản này được viết ra nhờ sự stress khi học từ vựng 😅</i>
+        </div>
+    """, unsafe_allow_html=True)
 
 data = load_data()
 
