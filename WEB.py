@@ -206,11 +206,11 @@ with st.sidebar:
 
 data = load_data()
 
-# --- LOGIC THÔNG MINH (ĐÃ UPDATE ƯU TIÊN TỪ MỚI) ---
+# --- LOGIC THÔNG MINH (ƯU TIÊN TỪ MỚI) ---
 def generate_new_question():
     if len(data) < 2: return
     
-    # 1. Lọc bỏ các từ vừa mới gặp (trong recent_history)
+    # 1. Lọc bỏ các từ vừa mới gặp
     available_pool = data
     if len(data) > 8:
         available_pool = [d for d in data if d[COL_ENG] not in st.session_state.recent_history]
@@ -221,11 +221,9 @@ def generate_new_question():
         weights = []
         for d in available_pool:
             word = d[COL_ENG]
-            # LOGIC QUAN TRỌNG Ở ĐÂY:
-            # Nếu từ này chưa có trong bộ nhớ trọng số -> Nó là TỪ MỚI TINH -> Gán trọng số CAO (50)
-            # Nếu đã có -> Lấy trọng số cũ (thường là 1-20)
+            # LOGIC: Từ chưa có trong danh sách trọng số = TỪ MỚI -> Gán trọng số cao (50)
             if word not in st.session_state.word_weights:
-                weights.append(50) # ƯU TIÊN TỪ MỚI
+                weights.append(50) 
             else:
                 weights.append(st.session_state.word_weights[word])
         
@@ -256,7 +254,6 @@ def handle_answer(selected_opt):
     duration = time.time() - st.session_state.start_time
     st.session_state.total += 1
     
-    # Lấy trọng số hiện tại (Nếu là từ mới, mặc định coi như 10 để tính toán tiếp)
     current_weight = st.session_state.word_weights.get(target_word, 10)
 
     if selected_opt == quiz['a']:
@@ -265,23 +262,22 @@ def handle_answer(selected_opt):
         st.session_state.last_result_msg = ("success", f"{fire_icon} Chính xác: {quiz['q']} - {quiz['a']}")
         
         if use_smart_review:
-            # Logic: Nhanh -> Giảm mạnh (để nhường chỗ từ khác). Chậm -> Tăng nhẹ.
+            # Trả lời nhanh -> Giảm trọng số
             if duration < 2.0: new_weight = max(1, current_weight - 5)
             elif duration > 3.5: new_weight = min(100, current_weight + 5)
             else: new_weight = max(1, current_weight - 2)
-            
             st.session_state.word_weights[target_word] = new_weight
     else:
         st.session_state.combo = 0 
         st.session_state.last_result_msg = ("error", f"❌ Sai rồi: '{quiz['q']}' là '{quiz['a']}' chứ không phải '{selected_opt}'")
-        # Sai -> Tăng cực mạnh trọng số để gặp lại ngay
+        # Sai -> Tăng trọng số
         st.session_state.word_weights[target_word] = min(100, current_weight + 15)
 
     st.session_state.recent_history.append(target_word)
     if len(st.session_state.recent_history) > 5: st.session_state.recent_history.pop(0)
     generate_new_question()
 
-# --- GIAO DIỆN CHÍNH ---
+# --- GIAO DIỆN CHÍNH (ĐÃ SỬA AUDIO) ---
 st.markdown(f'<h1 class="main-title">🌸 {st.session_state.get("selected_sheet_name", "Loading...")}</h1>', unsafe_allow_html=True)
 
 @st.fragment
@@ -291,6 +287,7 @@ def show_quiz_area():
 
     quiz = st.session_state.quiz
     
+    # Header
     c1, c2, c3 = st.columns([2, 1, 2])
     with c1: st.caption(f"🏆 Điểm: **{st.session_state.score}/{st.session_state.total}**")
     with c2: 
@@ -306,15 +303,17 @@ def show_quiz_area():
 
     st.markdown(f'<div class="main-card"><h1>{quiz["q"]}</h1></div>', unsafe_allow_html=True)
     
+    # AUDIO ĐÃ SỬA: Dùng width 100% thay vì scale
     col1, col2, col3 = st.columns([0.5, 9, 0.5]) 
     with col2:
         if st.session_state.get('current_audio_b64'):
             unique_id = f"audio_{uuid.uuid4()}"
             autoplay_attr = "autoplay" if auto_play else ""
+            # Sử dụng max-width để giới hạn trên PC, width: 100% cho Mobile
             html_audio = f"""
                 <div style="display: flex; justify-content: center; align-items: center; margin-top: 5px; margin-bottom: 25px;">
                     <audio id="{unique_id}" src="{st.session_state.current_audio_b64}" {autoplay_attr} controls 
-                    style="width: 100%; height: 50px; transform: scale(1.3); transform-origin: center;"></audio>
+                    style="width: 100%; max-width: 400px; height: 45px;"></audio>
                 </div>
             """
             st.components.v1.html(html_audio, height=80)
