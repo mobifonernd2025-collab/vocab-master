@@ -39,7 +39,6 @@ def apply_css(theme):
         /* --- NÚT BẤM --- */
         div.stButton > button {{ 
             min-height: 3.2em !important; 
-            font-size: 28px !important; 
             border-radius: 12px !important; 
             font-weight: 600 !important; 
             background-color: {theme['btn_bg']}; 
@@ -47,10 +46,16 @@ def apply_css(theme):
             color: {theme['btn_text']} !important; 
             width: 100%; 
             transition: transform 0.1s;
-            -webkit-tap-highlight-color: transparent; 
             outline: none !important;
             white-space: normal !important;
             padding: 5px !important;
+        }}
+
+        /* --- THÊM ĐOẠN NÀY ĐỂ ÉP CỠ CHỮ TRONG NÚT --- */
+        div.stButton > button p {{
+            font-size: 22px !important;  /* Chỉnh cỡ chữ nút ở đây */
+            line-height: 1.1 !important; /* Ép dòng gọn lại */
+            margin: 0 !important;
         }}
 
         @media (hover: hover) {{
