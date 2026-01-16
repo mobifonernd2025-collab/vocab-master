@@ -11,31 +11,54 @@ def apply_css(theme):
 
         .main-title {{ font-size: 24px !important; font-weight: 800 !important; color: {theme['text']} !important; text-align: center; margin-bottom: 0px; }}
         
+        /* --- CARD CÂU HỎI --- */
         .main-card {{ 
             background-color: {theme['card_bg']}; 
-            padding: 10px; 
             border-radius: 12px; 
-            text-align: center; 
             box-shadow: 0 2px 5px rgba(0,0,0,0.05); 
             border: 2px solid {theme['border']};
-            display: flex; align-items: center; justify-content: center;
-            min-height: 3.5em;
+            
+            /* Cấu hình chiều cao cố định để bằng nút */
+            height: 60px !important; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            margin-bottom: 5px;
+            padding: 0 10px; /* Padding ngang để chữ không sát lề */
         }}
         
-        .main-card h1 {{ color: {theme['text']} !important; font-size: 1.8em !important; margin: 0 !important; }}
+        .main-card h1 {{ 
+            color: {theme['text']} !important; 
+            font-size: 1.5em !important; /* Cỡ chữ vừa phải để không bị tràn */
+            margin: 0 !important; 
+            font-weight: 700 !important;
+            line-height: 1.2 !important;
+        }}
 
         div[data-testid="stAlert"] {{ padding: 0.5rem 1rem !important; margin-bottom: 0.5rem !important; font-size: 1.1rem !important; }}
 
+        /* --- NÚT BẤM (TO & CAO) --- */
         div.stButton > button {{ 
-            height: 3.5em !important; 
+            height: 60px !important; /* Chiều cao bằng Card */
             font-size: 18px !important; 
-            border-radius: 12px !important; font-weight: 600 !important; 
+            border-radius: 12px !important; 
+            font-weight: 600 !important; 
+            
             background-color: {theme['btn_bg']}; 
             border: 2px solid {theme['border']} !important; 
             color: {theme['btn_text']} !important; 
-            width: 100%; transition: transform 0.1s;
-            -webkit-tap-highlight-color: transparent; outline: none !important;
-            white-space: normal !important; padding: 0px 5px !important;
+            
+            width: 100%; 
+            transition: transform 0.1s;
+            -webkit-tap-highlight-color: transparent; 
+            outline: none !important;
+            white-space: normal !important; /* Cho phép xuống dòng nếu chữ dài */
+            padding: 0px 5px !important;
+            
+            /* Căn giữa chữ */
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
         }}
 
         @media (hover: hover) {{
