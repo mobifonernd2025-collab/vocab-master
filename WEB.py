@@ -214,4 +214,4 @@ def show_quiz_area():
                 st.button(opt, key=uuid.uuid4(), on_click=handle_answer, args=(opt,), use_container_width=True)
 
 show_quiz_area()
-st.markdown(f'<div class="author-text">Made by {AUTHOR} 🌸</div>', unsafe_allow_html=True)
+st.markdown(f'<div class="author-text">Made by đại ca {AUTHOR} </div>', unsafe_allow_html=True)
