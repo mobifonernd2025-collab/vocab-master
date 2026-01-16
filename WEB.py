@@ -163,8 +163,11 @@ def show_quiz_area():
 
     if st.session_state.last_result_msg:
         mstype, msg = st.session_state.last_result_msg
-        if mstype == "success": st.markdown(f'<div class="result-box result-success">{msg}</div>', unsafe_allow_html=True)
-        else: st.markdown(f'<div class="result-box result-error">{msg}</div>', unsafe_allow_html=True)
+        if mstype == "success":
+            st.toast(msg, icon="🎉") # Hiện thông báo góc phải
+        else:
+            # Nếu sai thì vẫn nên hiện to để người dùng đọc giải thích
+            st.markdown(f'<div class="result-box result-error">{msg}</div>', unsafe_allow_html=True)
         st.session_state.last_result_msg = None
 
     # 2. KHUNG CÂU HỎI (Full Width)
