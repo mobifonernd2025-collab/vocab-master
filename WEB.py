@@ -38,6 +38,15 @@ def reset_quiz():
 
 # --- SIDEBAR ---
 client = get_gspread_client()
+@st.cache_data(ttl=3600)
+def get_sheet_names():
+    try:
+        if client:
+            spreadsheet = client.open_by_key(FILE_ID)
+            return [ws.title for ws in spreadsheet.worksheets()]
+        return []
+    except: return []
+sheet_names = get_sheet_names() # Gọi hàm đã cache thay vì gọi trực tiếp
 try:
     if client:
         from config import FILE_ID
@@ -73,7 +82,8 @@ with st.sidebar:
     st.divider()
     st.markdown(f"<div style='text-align: center; color: gray; font-size: 0.9em;'><b>{AUTHOR} MobiFone HighTech</b><br><i>Phiên bản này được viết ra nhờ sự stress khi học từ vựng 😅</i></div>", unsafe_allow_html=True)
 
-data = load_data()
+current_sheet = st.session_state.get('selected_sheet_name', sheet_names[0] if sheet_names else None)
+data = load_data(current_sheet) # Truyền tên sheet vào đây
 
 # --- LOGIC ---
 def generate_new_question():
