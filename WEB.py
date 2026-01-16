@@ -191,11 +191,13 @@ def show_quiz_area():
             st.components.v1.html(html_audio, height=50)
             
     with col_skip:
-    st.button("Bỏ qua", 
-              key="btn_ignore_side", 
-              use_container_width=True, 
-              on_click=ignore_current_word)
-
+        # Dòng này phải được lùi vào 1 Tab (hoặc 4 dấu cách) so với chữ with
+        st.button(
+            "Bỏ qua", 
+            key="btn_ignore_side", 
+            use_container_width=True, 
+            on_click=ignore_current_word
+        )
     st.write("") 
 
     # 4. ĐÁP ÁN
