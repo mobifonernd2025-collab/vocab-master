@@ -48,15 +48,18 @@ st.markdown(f"""
 
     .main-title {{ font-size: 24px !important; font-weight: 800 !important; color: {THEME['text']} !important; text-align: center; margin-bottom: 0px; }}
     
+    /* Card câu hỏi */
     .main-card {{ 
         background-color: {THEME['card_bg']}; 
         padding: 10px; 
-        border-radius: 15px; 
+        border-radius: 12px; /* Bo góc giống nút */
         text-align: center; 
-        box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
-        border-top: 5px solid {THEME['border']}; 
-        margin-bottom: 5px; 
-        margin-top: 5px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05); 
+        border: 2px solid {THEME['border']}; /* Viền giống nút */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 3.5em; /* Chiều cao tối thiểu bằng nút */
     }}
     
     .main-card h1 {{ color: {THEME['text']} !important; font-size: 1.8em !important; margin: 0 !important; }}
@@ -67,19 +70,20 @@ st.markdown(f"""
         font-size: 1.1rem !important;
     }}
 
+    /* Nút bấm chung */
     div.stButton > button {{ 
-        height: 3.2em !important; 
+        height: 3.5em !important; /* Chiều cao cố định để bằng card */
         font-size: 18px !important; 
-        border-radius: 10px !important; font-weight: 600 !important; 
+        border-radius: 12px !important; font-weight: 600 !important; 
         background-color: {THEME['btn_bg']}; 
         border: 2px solid {THEME['border']} !important; 
         color: {THEME['btn_text']} !important; 
-        width: 100%; margin-bottom: 5px;
+        width: 100%; 
         transition: transform 0.1s;
         -webkit-tap-highlight-color: transparent; 
         outline: none !important;
         white-space: normal !important;
-        padding: 2px 5px !important;
+        padding: 0px 5px !important; /* Giảm padding để chữ không bị đẩy */
     }}
 
     @media (hover: hover) {{
@@ -212,14 +216,12 @@ data = load_data()
 def generate_new_question():
     if len(data) < 2: return
     
-    # 1. Lọc bỏ các từ bị ẩn
     pool_after_ignore = [d for d in data if d[COL_ENG] not in st.session_state.ignored_words]
     
     if not pool_after_ignore:
         st.warning("Bạn đã ẩn hết sạch từ rồi! Hãy bấm Reset hoặc tải lại trang.")
         return
 
-    # 2. Lọc bỏ các từ vừa mới gặp
     if len(pool_after_ignore) > 8:
         available_pool = [d for d in pool_after_ignore if d[COL_ENG] not in st.session_state.recent_history]
         if not available_pool: available_pool = pool_after_ignore 
@@ -284,7 +286,6 @@ def handle_answer(selected_opt):
     if len(st.session_state.recent_history) > 5: st.session_state.recent_history.pop(0)
     generate_new_question()
 
-# HÀM XỬ LÝ NÚT ẨN
 def ignore_current_word():
     if st.session_state.quiz:
         current_word = st.session_state.quiz['raw_en']
@@ -317,14 +318,16 @@ def show_quiz_area():
         else: st.error(msg, icon="⚠️")
         st.session_state.last_result_msg = None
 
-    # --- KHU VỰC CÂU HỎI VÀ NÚT ẨN (ĐÃ UPDATE LAYOUT NGANG) ---
-    col_q, col_btn = st.columns([8, 2]) # Chia 8 phần cho câu hỏi, 2 phần cho nút
+    # --- KHU VỰC CÂU HỎI VÀ NÚT ẨN (ĐÃ CĂN CHỈNH ĐẸP) ---
+    # vertical_alignment="center" giúp 2 cột (Câu hỏi và Nút) canh giữa theo chiều dọc
+    col_q, col_btn = st.columns([8, 2], vertical_alignment="center") 
+    
     with col_q:
         st.markdown(f'<div class="main-card"><h1>{quiz["q"]}</h1></div>', unsafe_allow_html=True)
+    
     with col_btn:
-        st.write("") # Spacer để nút không bị dính lên trên
-        # Nút ẩn nhỏ gọn bên phải
-        if st.button("🙈 Ẩn", key="btn_ignore_top", help="Tạm ẩn từ này khỏi phiên học"):
+        # Nút "Bỏ qua" to, rõ, fill đầy khung, cùng style với card
+        if st.button("Bỏ qua", key="btn_ignore_top", use_container_width=True, help="Tạm ẩn từ này"):
             ignore_current_word()
             st.rerun()
     
@@ -355,7 +358,7 @@ def show_quiz_area():
             if spoken == quiz['raw_en'].lower().strip():
                 st.session_state.combo += 1; st.balloons(); time.sleep(1); generate_new_question(); st.rerun()
             else: st.session_state.combo = 0; st.error(f"Bạn nói: {spoken}")
-        if st.button("Bỏ qua"): st.session_state.combo = 0; generate_new_question(); st.rerun()
+        if st.button("Câu khác ➡️"): st.session_state.combo = 0; generate_new_question(); st.rerun()
         
     else:
         col_1, col_2 = st.columns(2)
