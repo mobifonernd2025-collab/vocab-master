@@ -154,7 +154,7 @@ def show_quiz_area():
 
     quiz = st.session_state.quiz
     
-    # 1. HEADER
+    # 1. Header
     c1, c2, c3 = st.columns([2, 1, 2])
     with c1: st.caption(f"🏆 Điểm: **{st.session_state.score}/{st.session_state.total}**")
     with c2: 
@@ -162,42 +162,40 @@ def show_quiz_area():
     score_val = st.session_state.score / (st.session_state.total if st.session_state.total > 0 else 1)
     st.progress(score_val)
 
-    # 2. THÔNG BÁO KẾT QUẢ
     if st.session_state.last_result_msg:
         mstype, msg = st.session_state.last_result_msg
         if mstype == "success": st.success(msg, icon="✅")
         else: st.error(msg, icon="⚠️")
         st.session_state.last_result_msg = None
 
-    # 3. KHU VỰC CÂU HỎI & NÚT BỎ QUA (ĐỒNG BỘ KÍCH THƯỚC)
-    col_q, col_btn = st.columns([8, 2], vertical_alignment="center") 
+    # 2. KHUNG CÂU HỎI (ĐÃ TO LẠI)
+    st.markdown(f'<div class="main-card"><h1>{quiz["q"]}</h1></div>', unsafe_allow_html=True)
     
-    with col_q:
-        # Card hiển thị từ vựng
-        st.markdown(f'<div class="main-card"><h1>{quiz["q"]}</h1></div>', unsafe_allow_html=True)
+    # 3. HÀNG AUDIO + NÚT BỎ QUA (NẰM CẠNH NHAU)
+    # vertical_alignment="center" giúp nút và audio thẳng hàng
+    col_audio, col_skip = st.columns([7, 3], vertical_alignment="center")
     
-    with col_btn:
-        # Nút Bỏ qua - To, Rõ, Không Icon
-        if st.button("Bỏ qua", key="btn_ignore_top", use_container_width=True, help="Tạm ẩn từ này"):
-            ignore_current_word(); st.rerun()
-    
-    # 4. AUDIO
-    col1, col2, col3 = st.columns([0.5, 9, 0.5]) 
-    with col2:
+    with col_audio:
         if st.session_state.get('current_audio_b64'):
             unique_id = f"audio_{uuid.uuid4()}"
             autoplay_attr = "autoplay" if auto_play else ""
+            # Dùng width 100% để audio tự giãn hết cột 7 phần
             html_audio = f"""
-                <div style="display: flex; justify-content: center; align-items: center; margin-top: 5px; margin-bottom: 25px;">
+                <div style="display: flex; align-items: center; width: 100%;">
                     <audio id="{unique_id}" src="{st.session_state.current_audio_b64}" {autoplay_attr} controls 
-                    style="width: 100%; max-width: 400px; height: 45px;"></audio>
+                    style="width: 100%; height: 40px;"></audio>
                 </div>
             """
-            st.components.v1.html(html_audio, height=80)
+            st.components.v1.html(html_audio, height=50) # Height nhỏ gọn vừa đủ
+            
+    with col_skip:
+        # Nút bỏ qua nhỏ gọn bên cạnh
+        if st.button("Bỏ qua", key="btn_ignore_side", use_container_width=True, help="Tạm ẩn từ này"):
+            ignore_current_word(); st.rerun()
 
-    st.write("") 
+    st.write("") # Khoảng cách nhỏ
 
-    # 5. KHU VỰC ĐÁP ÁN
+    # 4. KHU VỰC ĐÁP ÁN
     if st.session_state.mode == "🗣️ Luyện Phát Âm (Beta)":
         c1, c2, c3 = st.columns([1, 1, 1])
         with c2: 
@@ -208,8 +206,6 @@ def show_quiz_area():
             if spoken == quiz['raw_en'].lower().strip():
                 st.session_state.combo += 1; st.balloons(); time.sleep(1); generate_new_question(); st.rerun()
             else: st.session_state.combo = 0; st.error(f"Bạn nói: {spoken}")
-        
-        # Nút "Câu khác" ở chế độ nói
         if st.button("Câu khác ➡️"): st.session_state.combo = 0; generate_new_question(); st.rerun()
     else:
         col_1, col_2 = st.columns(2)
