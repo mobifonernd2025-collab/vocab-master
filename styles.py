@@ -39,7 +39,7 @@ def apply_css(theme):
         /* --- NÚT BẤM --- */
         div.stButton > button {{ 
             min-height: 3.2em !important; 
-            font-size: 22px !important; 
+            font-size: 28px !important; 
             border-radius: 12px !important; 
             font-weight: 600 !important; 
             background-color: {theme['btn_bg']}; 
