@@ -11,54 +11,44 @@ def apply_css(theme):
 
         .main-title {{ font-size: 24px !important; font-weight: 800 !important; color: {theme['text']} !important; text-align: center; margin-bottom: 0px; }}
         
-        /* --- CARD CÂU HỎI --- */
+        /* --- CARD CÂU HỎI (TO TỰ NHIÊN) --- */
         .main-card {{ 
             background-color: {theme['card_bg']}; 
-            border-radius: 12px; 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05); 
-            border: 2px solid {theme['border']};
+            border-radius: 15px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05); 
+            border-top: 5px solid {theme['border']}; /* Viền trên dày tạo điểm nhấn */
             
-            /* Cấu hình chiều cao cố định để bằng nút */
-            height: 60px !important; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center;
-            margin-bottom: 5px;
-            padding: 0 10px; /* Padding ngang để chữ không sát lề */
+            /* Để chiều cao tự động (auto) và tăng padding để khung to ra */
+            padding: 20px 10px; 
+            text-align: center;
+            margin-bottom: 10px;
+            margin-top: 5px;
         }}
         
         .main-card h1 {{ 
             color: {theme['text']} !important; 
-            font-size: 1.5em !important; /* Cỡ chữ vừa phải để không bị tràn */
+            font-size: 2.2em !important; /* Chữ to rõ ràng */
             margin: 0 !important; 
-            font-weight: 700 !important;
-            line-height: 1.2 !important;
+            font-weight: 800 !important;
         }}
 
         div[data-testid="stAlert"] {{ padding: 0.5rem 1rem !important; margin-bottom: 0.5rem !important; font-size: 1.1rem !important; }}
 
-        /* --- NÚT BẤM (TO & CAO) --- */
+        /* --- NÚT BẤM --- */
         div.stButton > button {{ 
-            height: 60px !important; /* Chiều cao bằng Card */
+            min-height: 3.2em !important; 
             font-size: 18px !important; 
             border-radius: 12px !important; 
             font-weight: 600 !important; 
-            
             background-color: {theme['btn_bg']}; 
             border: 2px solid {theme['border']} !important; 
             color: {theme['btn_text']} !important; 
-            
             width: 100%; 
             transition: transform 0.1s;
             -webkit-tap-highlight-color: transparent; 
             outline: none !important;
-            white-space: normal !important; /* Cho phép xuống dòng nếu chữ dài */
-            padding: 0px 5px !important;
-            
-            /* Căn giữa chữ */
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
+            white-space: normal !important;
+            padding: 5px !important;
         }}
 
         @media (hover: hover) {{
