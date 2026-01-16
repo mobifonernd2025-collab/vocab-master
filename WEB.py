@@ -1,4 +1,4 @@
-# WEB.py
+# WEB.py (Phần Sidebar đã cập nhật)
 import streamlit as st
 import random
 import time
@@ -47,18 +47,38 @@ except: sheet_names = []
 
 with st.sidebar:
     st.title("⚙️ Cài đặt")
-    theme_choice = st.selectbox("Chọn màu:", ["Sakura (Hồng)", "Mint (Xanh Dịu)"], index=0 if st.session_state.theme_mode == "Sakura (Hồng)" else 1)
+    
+    # --- CẬP NHẬT DANH SÁCH THEME MỚI TẠI ĐÂY ---
+    theme_options = [
+        "Sakura (Hồng)", 
+        "Mint (Xanh Bạc Hà)", 
+        "Ocean (Xanh Dương)", 
+        "Sunset (Cam Ấm)", 
+        "Lavender (Tím Nhạt)", 
+        "Midnight (Chế độ Tối)"
+    ]
+    
+    # Tìm index hiện tại để giữ trạng thái khi reload
+    current_index = 0
+    if st.session_state.theme_mode in theme_options:
+        current_index = theme_options.index(st.session_state.theme_mode)
+        
+    theme_choice = st.selectbox("🎨 Chọn giao diện:", theme_options, index=current_index)
+    
     if theme_choice != st.session_state.theme_mode:
         st.session_state.theme_mode = theme_choice
         st.rerun() 
+        
     st.divider()
+    
     if sheet_names:
-        new_sheet = st.selectbox("Chủ đề:", sheet_names)
+        new_sheet = st.selectbox("📚 Chủ đề từ vựng:", sheet_names)
         if new_sheet != st.session_state.get('selected_sheet_name'):
             st.session_state.selected_sheet_name = new_sheet
             reset_quiz() 
             st.session_state.recent_history = [] 
             st.rerun()
+            
     st.radio("Chế độ:", ["Anh ➔ Việt", "Việt ➔ Anh", "🗣️ Luyện Phát Âm (Beta)"], key="mode", on_change=reset_quiz)
     auto_play = st.toggle("🔊 Tự động phát âm", value=True)
     use_smart_review = st.checkbox("🧠 Ôn tập thông minh", value=True)
@@ -119,7 +139,7 @@ def handle_answer(selected_opt):
     if selected_opt == quiz['a']:
         st.session_state.score += 1; st.session_state.combo += 1 
         fire_icon = "🔥" * min(st.session_state.combo, 5) if st.session_state.combo > 1 else "🎉"
-        st.session_state.last_result_msg = ("success", f"{fire_icon} Chính xác: {quiz['q']} - {quiz['a']}")
+        st.session_state.last_result_msg = ("success", f"{fire_icon} Ngon luônnn: {quiz['q']} - {quiz['a']}")
         
         if use_smart_review:
             if duration < 2.0: new_weight = max(1, current_weight - 5)
@@ -128,7 +148,7 @@ def handle_answer(selected_opt):
             st.session_state.word_weights[target_word] = new_weight
     else:
         st.session_state.combo = 0 
-        st.session_state.last_result_msg = ("error", f"❌ Sai rồi: '{quiz['q']}' là '{quiz['a']}' chứ không phải '{selected_opt}'")
+        st.session_state.last_result_msg = ("error", f"❌ Toang rồi ông cháu: '{quiz['q']}' là '{quiz['a']}' chứ không phải '{selected_opt}'")
         st.session_state.word_weights[target_word] = min(100, current_weight + 15)
 
     st.session_state.recent_history.append(target_word)
@@ -143,7 +163,7 @@ def ignore_current_word():
         st.session_state.combo = 0; generate_new_question()
 
 # --- GIAO DIỆN CHÍNH ---
-st.markdown(f'<h1 class="main-title"> Gói từ vựng {st.session_state.get("selected_sheet_name", "Loading...")}</h1>', unsafe_allow_html=True)
+st.markdown(f'<h1 class="main-title">Chủ đề {st.session_state.get("selected_sheet_name", "Loading...")}</h1>', unsafe_allow_html=True)
 
 @st.fragment
 def show_quiz_area():
@@ -152,7 +172,6 @@ def show_quiz_area():
 
     quiz = st.session_state.quiz
     
-    # 1. Header
     c1, c2, c3 = st.columns([2, 1, 2])
     with c1: st.caption(f"🏆 Điểm: **{st.session_state.score}/{st.session_state.total}**")
     with c2: 
@@ -160,42 +179,33 @@ def show_quiz_area():
     score_val = st.session_state.score / (st.session_state.total if st.session_state.total > 0 else 1)
     st.progress(score_val)
 
-    # 2. THÔNG BÁO ANIMATION (ĐÃ UPDATE ĐỂ DÙNG CSS CUSTOM)
     if st.session_state.last_result_msg:
         mstype, msg = st.session_state.last_result_msg
-        if mstype == "success":
-            # Hiệu ứng nảy đàn hồi (Pop)
-            st.markdown(f'<div class="result-box result-success">{msg}</div>', unsafe_allow_html=True)
-        else:
-            # Hiệu ứng rung lắc (Shake)
-            st.markdown(f'<div class="result-box result-error">{msg}</div>', unsafe_allow_html=True)
+        if mstype == "success": st.success(msg, icon="✅")
+        else: st.error(msg, icon="⚠️")
         st.session_state.last_result_msg = None
 
-    # 3. KHUNG CÂU HỎI
-    st.markdown(f'<div class="main-card"><h1>{quiz["q"]}</h1></div>', unsafe_allow_html=True)
+    col_q, col_btn = st.columns([8, 2], vertical_alignment="center") 
+    with col_q: st.markdown(f'<div class="main-card"><h1>{quiz["q"]}</h1></div>', unsafe_allow_html=True)
+    with col_btn:
+        if st.button("Bỏ qua", key="btn_ignore_top", use_container_width=True, help="Tạm ẩn từ này"):
+            ignore_current_word(); st.rerun()
     
-    # 4. AUDIO + NÚT BỎ QUA
-    col_audio, col_skip = st.columns([7, 3], vertical_alignment="center")
-    
-    with col_audio:
+    col1, col2, col3 = st.columns([0.5, 9, 0.5]) 
+    with col2:
         if st.session_state.get('current_audio_b64'):
             unique_id = f"audio_{uuid.uuid4()}"
             autoplay_attr = "autoplay" if auto_play else ""
             html_audio = f"""
-                <div style="display: flex; align-items: center; width: 100%;">
+                <div style="display: flex; justify-content: center; align-items: center; margin-top: 5px; margin-bottom: 25px;">
                     <audio id="{unique_id}" src="{st.session_state.current_audio_b64}" {autoplay_attr} controls 
-                    style="width: 100%; height: 40px;"></audio>
+                    style="width: 100%; max-width: 400px; height: 45px;"></audio>
                 </div>
             """
-            st.components.v1.html(html_audio, height=50)
-            
-    with col_skip:
-        if st.button("Bỏ qua", key="btn_ignore_side", use_container_width=True, help="Tạm ẩn từ này"):
-            ignore_current_word(); st.rerun()
+            st.components.v1.html(html_audio, height=80)
 
     st.write("") 
 
-    # 5. ĐÁP ÁN
     if st.session_state.mode == "🗣️ Luyện Phát Âm (Beta)":
         c1, c2, c3 = st.columns([1, 1, 1])
         with c2: 
@@ -214,4 +224,4 @@ def show_quiz_area():
                 st.button(opt, key=uuid.uuid4(), on_click=handle_answer, args=(opt,), use_container_width=True)
 
 show_quiz_area()
-st.markdown(f'<div class="author-text">Made by đại ca {AUTHOR} </div>', unsafe_allow_html=True)
+st.markdown(f'<div class="author-text">Made by đại ca {AUTHOR}</div>', unsafe_allow_html=True)
