@@ -45,15 +45,13 @@ def get_gspread_client():
 
 # Hàm tải dữ liệu
 @st.cache_data(ttl=300) # Lưu bộ nhớ trong 5 phút, giúp web chạy cực nhanh
-def load_data(sheet_name, file_id): 
+def load_data():
     try:
         client = get_gspread_client()
         if not client: return []
-        spreadsheet = client.open_by_key(file_id)
-        ws = spreadsheet.worksheet(sheet_name)
-        # Lọc bỏ dòng trống ngay từ lúc load để nhẹ bộ nhớ
-        raw_data = ws.get_all_records()
-        return [r for r in raw_data if r.get(COL_ENG) and r.get(COL_VIE)]
-    except Exception as e:
-        print(f"Lỗi load_data: {e}")
-        return []
+        spreadsheet = client.open_by_key(FILE_ID)
+        sheet_name = st.session_state.get('selected_sheet_name')
+        if sheet_name: ws = spreadsheet.worksheet(sheet_name)
+        else: ws = spreadsheet.get_worksheet(0)
+        return [r for r in ws.get_all_records() if r.get(COL_ENG) and r.get(COL_VIE)]
+    except: return []
