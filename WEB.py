@@ -1,17 +1,18 @@
-# WEB.py (Phần Sidebar đã cập nhật)
+# WEB.py
 import streamlit as st
 import random
 import time
 import uuid
 from streamlit_mic_recorder import mic_recorder
 
+# --- IMPORT TỪ CÁC FILE BÊN CẠNH ---
 from config import AUTHOR, COL_ENG, COL_VIE, get_theme
 from styles import apply_css
 from utils import get_audio_base64, recognize_speech, get_gspread_client, load_data
 
 st.set_page_config(page_title=f"Vocab Master - {AUTHOR}", page_icon="🌸", layout="centered")
 
-# --- STATE ---
+# --- KHỞI TẠO STATE ---
 if 'theme_mode' not in st.session_state: st.session_state.theme_mode = "Sakura (Hồng)"
 if 'score' not in st.session_state: st.session_state.score = 0
 if 'total' not in st.session_state: st.session_state.total = 0
@@ -26,7 +27,7 @@ if 'last_audio_bytes' not in st.session_state: st.session_state.last_audio_bytes
 if 'combo' not in st.session_state: st.session_state.combo = 0
 if 'ignored_words' not in st.session_state: st.session_state.ignored_words = []
 
-# --- APPLY CSS ---
+# --- ÁP DỤNG THEME & CSS ---
 current_theme = get_theme(st.session_state.theme_mode)
 apply_css(current_theme)
 
@@ -35,42 +36,29 @@ def reset_quiz():
     st.session_state.last_result_msg = None
     st.session_state.combo = 0
 
-# --- SIDEBAR ---
+# --- SIDEBAR (ĐÃ SỬA LỖI MẤT NÚT) ---
 client = get_gspread_client()
+sheet_names = []
 try:
     if client:
         from config import FILE_ID
         spreadsheet = client.open_by_key(FILE_ID)
         sheet_names = [ws.title for ws in spreadsheet.worksheets()]
-    else: sheet_names = []
-except: sheet_names = []
+except Exception as e:
+    st.sidebar.error(f"Lỗi kết nối Sheet: {e}")
 
 with st.sidebar:
     st.title("⚙️ Cài đặt")
     
-    # --- CẬP NHẬT DANH SÁCH THEME MỚI TẠI ĐÂY ---
-    theme_options = [
-        "Sakura (Hồng)", 
-        "Mint (Xanh Bạc Hà)", 
-        "Ocean (Xanh Dương)", 
-        "Sunset (Cam Ấm)", 
-        "Lavender (Tím Nhạt)", 
-        "Midnight (Chế độ Tối)"
-    ]
-    
-    # Tìm index hiện tại để giữ trạng thái khi reload
-    current_index = 0
-    if st.session_state.theme_mode in theme_options:
-        current_index = theme_options.index(st.session_state.theme_mode)
-        
-    theme_choice = st.selectbox("🎨 Chọn giao diện:", theme_options, index=current_index)
-    
+    # 1. Chọn Giao diện
+    theme_choice = st.selectbox("🎨 Giao diện:", ["Sakura (Hồng)", "Mint (Xanh Dịu)", "Ocean (Xanh Dương)", "Sunset (Cam Ấm)", "Lavender (Tím Nhạt)", "Midnight (Chế độ Tối)"], index=0 if st.session_state.theme_mode == "Sakura (Hồng)" else ["Sakura (Hồng)", "Mint (Xanh Dịu)", "Ocean (Xanh Dương)", "Sunset (Cam Ấm)", "Lavender (Tím Nhạt)", "Midnight (Chế độ Tối)"].index(st.session_state.theme_mode))
     if theme_choice != st.session_state.theme_mode:
         st.session_state.theme_mode = theme_choice
         st.rerun() 
         
     st.divider()
     
+    # 2. Chọn Chủ đề (HIỆN LỖI NẾU KHÔNG CÓ DATA)
     if sheet_names:
         new_sheet = st.selectbox("📚 Chủ đề từ vựng:", sheet_names)
         if new_sheet != st.session_state.get('selected_sheet_name'):
@@ -78,8 +66,13 @@ with st.sidebar:
             reset_quiz() 
             st.session_state.recent_history = [] 
             st.rerun()
-            
+    else:
+        st.warning("⚠️ Không tìm thấy Sheet nào! Vui lòng kiểm tra kết nối mạng hoặc ID File.")
+
+    # 3. Chọn Chế độ
     st.radio("Chế độ:", ["Anh ➔ Việt", "Việt ➔ Anh", "🗣️ Luyện Phát Âm (Beta)"], key="mode", on_change=reset_quiz)
+    
+    # 4. Tùy chọn khác
     auto_play = st.toggle("🔊 Tự động phát âm", value=True)
     use_smart_review = st.checkbox("🧠 Ôn tập thông minh", value=True)
     
@@ -94,12 +87,13 @@ with st.sidebar:
 
 data = load_data()
 
-# --- LOGIC ---
+# --- LOGIC TRÒ CHƠI ---
 def generate_new_question():
     if len(data) < 2: return
     
     pool_after_ignore = [d for d in data if d[COL_ENG] not in st.session_state.ignored_words]
-    if not pool_after_ignore: st.warning("Bạn đã ẩn hết sạch từ rồi!"); return
+    if not pool_after_ignore:
+        st.warning("Bạn đã ẩn hết sạch từ rồi!"); return
 
     if len(pool_after_ignore) > 8:
         available_pool = [d for d in pool_after_ignore if d[COL_ENG] not in st.session_state.recent_history]
@@ -185,12 +179,14 @@ def show_quiz_area():
         else: st.error(msg, icon="⚠️")
         st.session_state.last_result_msg = None
 
+    # Card Câu Hỏi
     col_q, col_btn = st.columns([8, 2], vertical_alignment="center") 
     with col_q: st.markdown(f'<div class="main-card"><h1>{quiz["q"]}</h1></div>', unsafe_allow_html=True)
     with col_btn:
         if st.button("Bỏ qua", key="btn_ignore_top", use_container_width=True, help="Tạm ẩn từ này"):
             ignore_current_word(); st.rerun()
     
+    # Audio
     col1, col2, col3 = st.columns([0.5, 9, 0.5]) 
     with col2:
         if st.session_state.get('current_audio_b64'):
@@ -206,6 +202,7 @@ def show_quiz_area():
 
     st.write("") 
 
+    # Đáp án
     if st.session_state.mode == "🗣️ Luyện Phát Âm (Beta)":
         c1, c2, c3 = st.columns([1, 1, 1])
         with c2: 
