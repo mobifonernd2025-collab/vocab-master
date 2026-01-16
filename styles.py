@@ -29,7 +29,7 @@ def apply_css(theme):
         
         .main-card h1 {{ 
             color: {theme['text']} !important; 
-            font-size: 2.2em !important; /* Chữ to rõ ràng */
+            font-size: 2.5em !important; /* Chữ to rõ ràng */
             margin: 0 !important; 
             font-weight: 800 !important;
         }}
@@ -39,7 +39,7 @@ def apply_css(theme):
         /* --- NÚT BẤM --- */
         div.stButton > button {{ 
             min-height: 3.2em !important; 
-            font-size: 18px !important; 
+            font-size: 22px !important; 
             border-radius: 12px !important; 
             font-weight: 600 !important; 
             background-color: {theme['btn_bg']}; 
