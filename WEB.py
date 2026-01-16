@@ -143,7 +143,7 @@ def ignore_current_word():
         st.session_state.combo = 0; generate_new_question()
 
 # --- GIAO DIỆN CHÍNH ---
-st.markdown(f'<h1 class="main-title">🌸 {st.session_state.get("selected_sheet_name", "Loading...")}</h1>', unsafe_allow_html=True)
+st.markdown(f'<h1 class="main-title"> Gói từ vựng {st.session_state.get("selected_sheet_name", "Loading...")}</h1>', unsafe_allow_html=True)
 
 @st.fragment
 def show_quiz_area():
