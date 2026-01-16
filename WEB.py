@@ -47,6 +47,13 @@ def get_sheet_names():
         return []
     except: return []
 sheet_names = get_sheet_names() # Gọi hàm đã cache thay vì gọi trực tiếp
+try:
+    if client:
+        from config import FILE_ID
+        spreadsheet = client.open_by_key(FILE_ID)
+        sheet_names = [ws.title for ws in spreadsheet.worksheets()]
+    else: sheet_names = []
+except: sheet_names = []
 
 with st.sidebar:
     st.title("⚙️ Cài đặt")
