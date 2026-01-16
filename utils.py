@@ -44,7 +44,6 @@ def get_gspread_client():
         return None
 
 # Hàm tải dữ liệu
-@st.cache_data(ttl=300) # Lưu bộ nhớ trong 5 phút, giúp web chạy cực nhanh
 def load_data():
     try:
         client = get_gspread_client()
