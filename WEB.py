@@ -158,6 +158,8 @@ if 'start_time' not in st.session_state: st.session_state.start_time = 0
 if 'mode' not in st.session_state: st.session_state.mode = "Anh ➔ Việt" 
 if 'last_audio_bytes' not in st.session_state: st.session_state.last_audio_bytes = None
 if 'combo' not in st.session_state: st.session_state.combo = 0
+# MỚI: Danh sách từ bị ẩn trong phiên này
+if 'ignored_words' not in st.session_state: st.session_state.ignored_words = []
 
 def reset_quiz():
     st.session_state.quiz = None
@@ -194,6 +196,7 @@ with st.sidebar:
     if st.button("Reset điểm & Thuật toán"):
         st.session_state.score = 0; st.session_state.total = 0; st.session_state.word_weights = {} 
         st.session_state.recent_history = []; st.session_state.last_audio_bytes = None; st.session_state.combo = 0
+        st.session_state.ignored_words = [] # Reset cả danh sách ẩn
         reset_quiz(); st.rerun()
         
     st.divider()
@@ -206,22 +209,29 @@ with st.sidebar:
 
 data = load_data()
 
-# --- LOGIC THÔNG MINH (ƯU TIÊN TỪ MỚI) ---
+# --- LOGIC THÔNG MINH (ĐÃ UPDATE BỘ LỌC ẨN TỪ) ---
 def generate_new_question():
     if len(data) < 2: return
     
-    # 1. Lọc bỏ các từ vừa mới gặp
-    available_pool = data
-    if len(data) > 8:
-        available_pool = [d for d in data if d[COL_ENG] not in st.session_state.recent_history]
-        if not available_pool: available_pool = data 
+    # BƯỚC 1: Lọc bỏ các từ nằm trong danh sách IGNOGED (Tạm ẩn)
+    pool_after_ignore = [d for d in data if d[COL_ENG] not in st.session_state.ignored_words]
+    
+    if not pool_after_ignore:
+        st.warning("Bạn đã ẩn hết sạch từ rồi! Hãy bấm Reset hoặc tải lại trang.")
+        return
+
+    # BƯỚC 2: Lọc bỏ các từ vừa mới gặp (trong recent_history)
+    if len(pool_after_ignore) > 8:
+        available_pool = [d for d in pool_after_ignore if d[COL_ENG] not in st.session_state.recent_history]
+        if not available_pool: available_pool = pool_after_ignore # Fallback
+    else:
+        available_pool = pool_after_ignore
 
     target = None
     if use_smart_review:
         weights = []
         for d in available_pool:
             word = d[COL_ENG]
-            # LOGIC: Từ chưa có trong danh sách trọng số = TỪ MỚI -> Gán trọng số cao (50)
             if word not in st.session_state.word_weights:
                 weights.append(50) 
             else:
@@ -231,6 +241,7 @@ def generate_new_question():
     else:
         target = random.choice(available_pool)
 
+    # Chọn đáp án nhiễu từ toàn bộ data gốc (trừ target) để đa dạng
     others = random.sample([d for d in data if d != target], min(3, len(data)-1))
     
     if st.session_state.mode == "Anh ➔ Việt":
@@ -259,25 +270,32 @@ def handle_answer(selected_opt):
     if selected_opt == quiz['a']:
         st.session_state.score += 1; st.session_state.combo += 1 
         fire_icon = "🔥" * min(st.session_state.combo, 5) if st.session_state.combo > 1 else "🎉"
-        st.session_state.last_result_msg = ("success", f"{fire_icon} Ngon luônnnn: {quiz['q']} - {quiz['a']}")
+        st.session_state.last_result_msg = ("success", f"{fire_icon} Chính xác: {quiz['q']} - {quiz['a']}")
         
         if use_smart_review:
-            # Trả lời nhanh -> Giảm trọng số
             if duration < 2.0: new_weight = max(1, current_weight - 5)
             elif duration > 3.5: new_weight = min(100, current_weight + 5)
             else: new_weight = max(1, current_weight - 2)
             st.session_state.word_weights[target_word] = new_weight
     else:
         st.session_state.combo = 0 
-        st.session_state.last_result_msg = ("error", f"❌ Toang rồi ông cháu: '{quiz['q']}' là '{quiz['a']}' chứ không phải '{selected_opt}'")
-        # Sai -> Tăng trọng số
+        st.session_state.last_result_msg = ("error", f"❌ Sai rồi: '{quiz['q']}' là '{quiz['a']}' chứ không phải '{selected_opt}'")
         st.session_state.word_weights[target_word] = min(100, current_weight + 15)
 
     st.session_state.recent_history.append(target_word)
     if len(st.session_state.recent_history) > 5: st.session_state.recent_history.pop(0)
     generate_new_question()
 
-# --- GIAO DIỆN CHÍNH (ĐÃ SỬA AUDIO) ---
+# HÀM XỬ LÝ NÚT ẨN
+def ignore_current_word():
+    if st.session_state.quiz:
+        current_word = st.session_state.quiz['raw_en']
+        st.session_state.ignored_words.append(current_word)
+        st.toast(f"Đã ẩn từ: {current_word} 🙈", icon="✅")
+        st.session_state.combo = 0 # Reset combo để tránh cheat
+        generate_new_question()
+
+# --- GIAO DIỆN CHÍNH ---
 st.markdown(f'<h1 class="main-title">🌸 {st.session_state.get("selected_sheet_name", "Loading...")}</h1>', unsafe_allow_html=True)
 
 @st.fragment
@@ -303,13 +321,12 @@ def show_quiz_area():
 
     st.markdown(f'<div class="main-card"><h1>{quiz["q"]}</h1></div>', unsafe_allow_html=True)
     
-    # AUDIO ĐÃ SỬA: Dùng width 100% thay vì scale
+    # Audio
     col1, col2, col3 = st.columns([0.5, 9, 0.5]) 
     with col2:
         if st.session_state.get('current_audio_b64'):
             unique_id = f"audio_{uuid.uuid4()}"
             autoplay_attr = "autoplay" if auto_play else ""
-            # Sử dụng max-width để giới hạn trên PC, width: 100% cho Mobile
             html_audio = f"""
                 <div style="display: flex; justify-content: center; align-items: center; margin-top: 5px; margin-bottom: 25px;">
                     <audio id="{unique_id}" src="{st.session_state.current_audio_b64}" {autoplay_attr} controls 
@@ -332,11 +349,26 @@ def show_quiz_area():
                 st.session_state.combo += 1; st.balloons(); time.sleep(1); generate_new_question(); st.rerun()
             else: st.session_state.combo = 0; st.error(f"Bạn nói: {spoken}")
         if st.button("Bỏ qua"): st.session_state.combo = 0; generate_new_question(); st.rerun()
+        
+        # NÚT ẨN TỪ (CHẾ ĐỘ NÓI)
+        if st.button("🙈 Tạm ẩn từ này"):
+            ignore_current_word()
+            st.rerun()
+            
     else:
         col_1, col_2 = st.columns(2)
         for idx, opt in enumerate(quiz['opts']):
             with (col_1 if idx % 2 == 0 else col_2): 
                 st.button(opt, key=uuid.uuid4(), on_click=handle_answer, args=(opt,), use_container_width=True)
+        
+        # NÚT ẨN TỪ (CHẾ ĐỘ TRẮC NGHIỆM)
+        st.write("")
+        # Dùng columns để căn giữa nút ẩn
+        b1, b2, b3 = st.columns([1, 2, 1])
+        with b2:
+            if st.button("🙈 Tạm ẩn từ này", type="secondary"):
+                ignore_current_word()
+                st.rerun()
 
 show_quiz_area()
 st.markdown(f'<div class="author-text">Made by {AUTHOR} 🌸</div>', unsafe_allow_html=True)
