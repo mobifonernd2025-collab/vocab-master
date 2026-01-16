@@ -139,9 +139,14 @@ def handle_answer(selected_opt):
 def ignore_current_word():
     if st.session_state.quiz:
         current_word = st.session_state.quiz['raw_en']
-        st.session_state.ignored_words.append(current_word)
+        # Thêm vào danh sách ẩn
+        if current_word not in st.session_state.ignored_words:
+            st.session_state.ignored_words.append(current_word)
+        
         st.toast(f"Đã ẩn từ: {current_word} 🙈", icon="✅")
-        st.session_state.combo = 0; generate_new_question()
+        st.session_state.combo = 0
+        # reset quiz về None để khi rerun, logic 'if quiz is None' sẽ tự gọi generate_new_question()
+        st.session_state.quiz = None
 
 # --- GIAO DIỆN CHÍNH ---
 st.markdown(f'<h1 class="main-title">Chủ đề {st.session_state.get("selected_sheet_name", "Loading...")}</h1>', unsafe_allow_html=True)
@@ -186,8 +191,10 @@ def show_quiz_area():
             st.components.v1.html(html_audio, height=50)
             
     with col_skip:
-        if st.button("Bỏ qua", key="btn_ignore_side", use_container_width=True, help="Tạm ẩn từ này"):
-            ignore_current_word(); st.rerun()
+    st.button("Bỏ qua", 
+              key="btn_ignore_side", 
+              use_container_width=True, 
+              on_click=ignore_current_word)
 
     st.write("") 
 
