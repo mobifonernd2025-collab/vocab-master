@@ -40,7 +40,6 @@ def reset_quiz():
 client = get_gspread_client()
 try:
     if client:
-        # Load danh sách sheet
         from config import FILE_ID
         spreadsheet = client.open_by_key(FILE_ID)
         sheet_names = [ws.title for ws in spreadsheet.worksheets()]
@@ -155,6 +154,7 @@ def show_quiz_area():
 
     quiz = st.session_state.quiz
     
+    # 1. HEADER
     c1, c2, c3 = st.columns([2, 1, 2])
     with c1: st.caption(f"🏆 Điểm: **{st.session_state.score}/{st.session_state.total}**")
     with c2: 
@@ -162,18 +162,26 @@ def show_quiz_area():
     score_val = st.session_state.score / (st.session_state.total if st.session_state.total > 0 else 1)
     st.progress(score_val)
 
+    # 2. THÔNG BÁO KẾT QUẢ
     if st.session_state.last_result_msg:
         mstype, msg = st.session_state.last_result_msg
         if mstype == "success": st.success(msg, icon="✅")
         else: st.error(msg, icon="⚠️")
         st.session_state.last_result_msg = None
 
+    # 3. KHU VỰC CÂU HỎI & NÚT BỎ QUA (ĐỒNG BỘ KÍCH THƯỚC)
     col_q, col_btn = st.columns([8, 2], vertical_alignment="center") 
-    with col_q: st.markdown(f'<div class="main-card"><h1>{quiz["q"]}</h1></div>', unsafe_allow_html=True)
+    
+    with col_q:
+        # Card hiển thị từ vựng
+        st.markdown(f'<div class="main-card"><h1>{quiz["q"]}</h1></div>', unsafe_allow_html=True)
+    
     with col_btn:
+        # Nút Bỏ qua - To, Rõ, Không Icon
         if st.button("Bỏ qua", key="btn_ignore_top", use_container_width=True, help="Tạm ẩn từ này"):
             ignore_current_word(); st.rerun()
     
+    # 4. AUDIO
     col1, col2, col3 = st.columns([0.5, 9, 0.5]) 
     with col2:
         if st.session_state.get('current_audio_b64'):
@@ -189,6 +197,7 @@ def show_quiz_area():
 
     st.write("") 
 
+    # 5. KHU VỰC ĐÁP ÁN
     if st.session_state.mode == "🗣️ Luyện Phát Âm (Beta)":
         c1, c2, c3 = st.columns([1, 1, 1])
         with c2: 
@@ -199,6 +208,8 @@ def show_quiz_area():
             if spoken == quiz['raw_en'].lower().strip():
                 st.session_state.combo += 1; st.balloons(); time.sleep(1); generate_new_question(); st.rerun()
             else: st.session_state.combo = 0; st.error(f"Bạn nói: {spoken}")
+        
+        # Nút "Câu khác" ở chế độ nói
         if st.button("Câu khác ➡️"): st.session_state.combo = 0; generate_new_question(); st.rerun()
     else:
         col_1, col_2 = st.columns(2)
