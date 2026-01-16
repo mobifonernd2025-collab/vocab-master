@@ -5,14 +5,13 @@ import time
 import uuid
 from streamlit_mic_recorder import mic_recorder
 
-# --- IMPORT TỪ CÁC FILE BÊN CẠNH ---
 from config import AUTHOR, COL_ENG, COL_VIE, get_theme
 from styles import apply_css
 from utils import get_audio_base64, recognize_speech, get_gspread_client, load_data
 
 st.set_page_config(page_title=f"Vocab Master - {AUTHOR}", page_icon="🌸", layout="centered")
 
-# --- KHỞI TẠO STATE ---
+# --- STATE ---
 if 'theme_mode' not in st.session_state: st.session_state.theme_mode = "Sakura (Hồng)"
 if 'score' not in st.session_state: st.session_state.score = 0
 if 'total' not in st.session_state: st.session_state.total = 0
@@ -27,7 +26,7 @@ if 'last_audio_bytes' not in st.session_state: st.session_state.last_audio_bytes
 if 'combo' not in st.session_state: st.session_state.combo = 0
 if 'ignored_words' not in st.session_state: st.session_state.ignored_words = []
 
-# --- ÁP DỤNG THEME & CSS ---
+# --- APPLY CSS ---
 current_theme = get_theme(st.session_state.theme_mode)
 apply_css(current_theme)
 
@@ -75,13 +74,12 @@ with st.sidebar:
 
 data = load_data()
 
-# --- LOGIC TRÒ CHƠI ---
+# --- LOGIC ---
 def generate_new_question():
     if len(data) < 2: return
     
     pool_after_ignore = [d for d in data if d[COL_ENG] not in st.session_state.ignored_words]
-    if not pool_after_ignore:
-        st.warning("Bạn đã ẩn hết sạch từ rồi!"); return
+    if not pool_after_ignore: st.warning("Bạn đã ẩn hết sạch từ rồi!"); return
 
     if len(pool_after_ignore) > 8:
         available_pool = [d for d in pool_after_ignore if d[COL_ENG] not in st.session_state.recent_history]
@@ -162,40 +160,42 @@ def show_quiz_area():
     score_val = st.session_state.score / (st.session_state.total if st.session_state.total > 0 else 1)
     st.progress(score_val)
 
+    # 2. THÔNG BÁO ANIMATION (ĐÃ UPDATE ĐỂ DÙNG CSS CUSTOM)
     if st.session_state.last_result_msg:
         mstype, msg = st.session_state.last_result_msg
-        if mstype == "success": st.success(msg, icon="✅")
-        else: st.error(msg, icon="⚠️")
+        if mstype == "success":
+            # Hiệu ứng nảy đàn hồi (Pop)
+            st.markdown(f'<div class="result-box result-success">{msg}</div>', unsafe_allow_html=True)
+        else:
+            # Hiệu ứng rung lắc (Shake)
+            st.markdown(f'<div class="result-box result-error">{msg}</div>', unsafe_allow_html=True)
         st.session_state.last_result_msg = None
 
-    # 2. KHUNG CÂU HỎI (ĐÃ TO LẠI)
+    # 3. KHUNG CÂU HỎI
     st.markdown(f'<div class="main-card"><h1>{quiz["q"]}</h1></div>', unsafe_allow_html=True)
     
-    # 3. HÀNG AUDIO + NÚT BỎ QUA (NẰM CẠNH NHAU)
-    # vertical_alignment="center" giúp nút và audio thẳng hàng
+    # 4. AUDIO + NÚT BỎ QUA
     col_audio, col_skip = st.columns([7, 3], vertical_alignment="center")
     
     with col_audio:
         if st.session_state.get('current_audio_b64'):
             unique_id = f"audio_{uuid.uuid4()}"
             autoplay_attr = "autoplay" if auto_play else ""
-            # Dùng width 100% để audio tự giãn hết cột 7 phần
             html_audio = f"""
                 <div style="display: flex; align-items: center; width: 100%;">
                     <audio id="{unique_id}" src="{st.session_state.current_audio_b64}" {autoplay_attr} controls 
                     style="width: 100%; height: 40px;"></audio>
                 </div>
             """
-            st.components.v1.html(html_audio, height=50) # Height nhỏ gọn vừa đủ
+            st.components.v1.html(html_audio, height=50)
             
     with col_skip:
-        # Nút bỏ qua nhỏ gọn bên cạnh
         if st.button("Bỏ qua", key="btn_ignore_side", use_container_width=True, help="Tạm ẩn từ này"):
             ignore_current_word(); st.rerun()
 
-    st.write("") # Khoảng cách nhỏ
+    st.write("") 
 
-    # 4. KHU VỰC ĐÁP ÁN
+    # 5. ĐÁP ÁN
     if st.session_state.mode == "🗣️ Luyện Phát Âm (Beta)":
         c1, c2, c3 = st.columns([1, 1, 1])
         with c2: 
