@@ -1,4 +1,3 @@
-# WEB.py
 import streamlit as st
 import random
 import time
@@ -6,13 +5,13 @@ import uuid
 from streamlit_mic_recorder import mic_recorder
 
 # --- IMPORT TỪ CÁC FILE BÊN CẠNH ---
-from config import AUTHOR, COL_ENG, COL_VIE, get_theme
+from config import AUTHOR, COL_ENG, COL_VIE, get_theme, FILE_ID # <--- Nhớ import FILE_ID ở đây
 from styles import apply_css
 from utils import get_audio_base64, recognize_speech, get_gspread_client, load_data
 
 st.set_page_config(page_title=f"Vocab Master - {AUTHOR}", page_icon="🌸", layout="centered")
 
-# --- KHỞI TẠO STATE ---
+# --- KHỞI TẠO STATE (Giữ nguyên) ---
 if 'theme_mode' not in st.session_state: st.session_state.theme_mode = "Sakura (Hồng)"
 if 'score' not in st.session_state: st.session_state.score = 0
 if 'total' not in st.session_state: st.session_state.total = 0
@@ -36,39 +35,53 @@ def reset_quiz():
     st.session_state.last_result_msg = None
     st.session_state.combo = 0
 
-# --- SIDEBAR ---
-client = get_gspread_client()
+# --- [QUAN TRỌNG] HÀM LẤY TÊN SHEET (CÓ CACHE) ---
 @st.cache_data(ttl=3600)
 def get_sheet_names():
     try:
+        # Gọi client bên trong hàm để đảm bảo hoạt động tốt với cache
+        client = get_gspread_client()
         if client:
             spreadsheet = client.open_by_key(FILE_ID)
             return [ws.title for ws in spreadsheet.worksheets()]
         return []
-    except: return []
-sheet_names = get_sheet_names() # Gọi hàm đã cache thay vì gọi trực tiếp
-try:
-    if client:
-        from config import FILE_ID
-        spreadsheet = client.open_by_key(FILE_ID)
-        sheet_names = [ws.title for ws in spreadsheet.worksheets()]
-    else: sheet_names = []
-except: sheet_names = []
+    except Exception as e:
+        # st.error(f"Lỗi tải danh sách sheet: {e}") # Bật lên nếu cần debug
+        return []
 
+# --- GỌI HÀM ĐỂ LẤY DANH SÁCH ---
+sheet_names = get_sheet_names()
+
+# --- SIDEBAR ---
 with st.sidebar:
     st.title("⚙️ Cài đặt")
+    
+    # 1. Chọn Theme
     theme_choice = st.selectbox("Chọn màu:", ["Sakura (Hồng)", "Mint (Xanh Dịu)", "Ocean (Xanh Dương)", "Sunset (Cam Ấm)", "Lavender (Tím Nhạt)", "Midnight (Chế độ Tối)"], index=0 if st.session_state.theme_mode == "Sakura (Hồng)" else ["Sakura (Hồng)", "Mint (Xanh Dịu)", "Ocean (Xanh Dương)", "Sunset (Cam Ấm)", "Lavender (Tím Nhạt)", "Midnight (Chế độ Tối)"].index(st.session_state.theme_mode))
     if theme_choice != st.session_state.theme_mode:
         st.session_state.theme_mode = theme_choice
         st.rerun() 
+    
     st.divider()
+    
+    # 2. Chọn Chủ đề (Nếu list có dữ liệu thì mới hiện)
     if sheet_names:
-        new_sheet = st.selectbox("Chủ đề:", sheet_names)
+        # Mặc định chọn cái đầu tiên nếu chưa chọn
+        current_idx = 0
+        if st.session_state.get('selected_sheet_name') in sheet_names:
+            current_idx = sheet_names.index(st.session_state.selected_sheet_name)
+            
+        new_sheet = st.selectbox("Chủ đề:", sheet_names, index=current_idx)
+        
         if new_sheet != st.session_state.get('selected_sheet_name'):
             st.session_state.selected_sheet_name = new_sheet
             reset_quiz() 
             st.session_state.recent_history = [] 
             st.rerun()
+    else:
+        st.warning("⚠️ Không tải được danh sách chủ đề (hoặc Google chặn). Hãy thử tải lại trang!")
+
+    # 3. Các cài đặt khác
     st.radio("Chế độ:", ["Anh ➔ Việt", "Việt ➔ Anh", "🗣️ Luyện Phát Âm (Beta)"], key="mode", on_change=reset_quiz)
     auto_play = st.toggle("🔊 Tự động phát âm", value=True)
     use_smart_review = st.checkbox("🧠 Ôn tập thông minh", value=True)
@@ -82,8 +95,10 @@ with st.sidebar:
     st.divider()
     st.markdown(f"<div style='text-align: center; color: gray; font-size: 0.9em;'><b>{AUTHOR} MobiFone HighTech</b><br><i>Phiên bản này được viết ra nhờ sự stress khi học từ vựng 😅</i></div>", unsafe_allow_html=True)
 
+# --- LOAD DATA (ĐOẠN SAU GIỮ NGUYÊN) ---
+# Lưu ý sửa dòng gọi hàm load_data bên dưới cho đúng logic mới
 current_sheet = st.session_state.get('selected_sheet_name', sheet_names[0] if sheet_names else None)
-data = load_data(current_sheet) # Truyền tên sheet vào đây
+data = load_data(current_sheet)
 
 # --- LOGIC ---
 def generate_new_question():
