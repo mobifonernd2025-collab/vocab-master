@@ -36,43 +36,31 @@ def reset_quiz():
     st.session_state.last_result_msg = None
     st.session_state.combo = 0
 
-# --- SIDEBAR (ĐÃ SỬA LỖI MẤT NÚT) ---
+# --- SIDEBAR ---
 client = get_gspread_client()
-sheet_names = []
 try:
     if client:
         from config import FILE_ID
         spreadsheet = client.open_by_key(FILE_ID)
         sheet_names = [ws.title for ws in spreadsheet.worksheets()]
-except Exception as e:
-    st.sidebar.error(f"Lỗi kết nối Sheet: {e}")
+    else: sheet_names = []
+except: sheet_names = []
 
 with st.sidebar:
     st.title("⚙️ Cài đặt")
-    
-    # 1. Chọn Giao diện
-    theme_choice = st.selectbox("🎨 Giao diện:", ["Sakura (Hồng)", "Mint (Xanh Dịu)", "Ocean (Xanh Dương)", "Sunset (Cam Ấm)", "Lavender (Tím Nhạt)", "Midnight (Chế độ Tối)"], index=0 if st.session_state.theme_mode == "Sakura (Hồng)" else ["Sakura (Hồng)", "Mint (Xanh Dịu)", "Ocean (Xanh Dương)", "Sunset (Cam Ấm)", "Lavender (Tím Nhạt)", "Midnight (Chế độ Tối)"].index(st.session_state.theme_mode))
+    theme_choice = st.selectbox("Chọn màu:", ["Sakura (Hồng)", "Mint (Xanh Dịu)", "Ocean (Xanh Dương)", "Sunset (Cam Ấm)", "Lavender (Tím Nhạt)", "Midnight (Chế độ Tối)"], index=0 if st.session_state.theme_mode == "Sakura (Hồng)" else ["Sakura (Hồng)", "Mint (Xanh Dịu)", "Ocean (Xanh Dương)", "Sunset (Cam Ấm)", "Lavender (Tím Nhạt)", "Midnight (Chế độ Tối)"].index(st.session_state.theme_mode))
     if theme_choice != st.session_state.theme_mode:
         st.session_state.theme_mode = theme_choice
         st.rerun() 
-        
     st.divider()
-    
-    # 2. Chọn Chủ đề (HIỆN LỖI NẾU KHÔNG CÓ DATA)
     if sheet_names:
-        new_sheet = st.selectbox("📚 Chủ đề từ vựng:", sheet_names)
+        new_sheet = st.selectbox("Chủ đề:", sheet_names)
         if new_sheet != st.session_state.get('selected_sheet_name'):
             st.session_state.selected_sheet_name = new_sheet
             reset_quiz() 
             st.session_state.recent_history = [] 
             st.rerun()
-    else:
-        st.warning("⚠️ Không tìm thấy Sheet nào! Vui lòng kiểm tra kết nối mạng hoặc ID File.")
-
-    # 3. Chọn Chế độ
     st.radio("Chế độ:", ["Anh ➔ Việt", "Việt ➔ Anh", "🗣️ Luyện Phát Âm (Beta)"], key="mode", on_change=reset_quiz)
-    
-    # 4. Tùy chọn khác
     auto_play = st.toggle("🔊 Tự động phát âm", value=True)
     use_smart_review = st.checkbox("🧠 Ôn tập thông minh", value=True)
     
@@ -87,13 +75,12 @@ with st.sidebar:
 
 data = load_data()
 
-# --- LOGIC TRÒ CHƠI ---
+# --- LOGIC ---
 def generate_new_question():
     if len(data) < 2: return
     
     pool_after_ignore = [d for d in data if d[COL_ENG] not in st.session_state.ignored_words]
-    if not pool_after_ignore:
-        st.warning("Bạn đã ẩn hết sạch từ rồi!"); return
+    if not pool_after_ignore: st.warning("Bạn đã ẩn hết sạch từ rồi!"); return
 
     if len(pool_after_ignore) > 8:
         available_pool = [d for d in pool_after_ignore if d[COL_ENG] not in st.session_state.recent_history]
@@ -133,7 +120,7 @@ def handle_answer(selected_opt):
     if selected_opt == quiz['a']:
         st.session_state.score += 1; st.session_state.combo += 1 
         fire_icon = "🔥" * min(st.session_state.combo, 5) if st.session_state.combo > 1 else "🎉"
-        st.session_state.last_result_msg = ("success", f"{fire_icon} Ngon luônnn: {quiz['q']} - {quiz['a']}")
+        st.session_state.last_result_msg = ("success", f"{fire_icon} Chính xác: {quiz['q']} - {quiz['a']}")
         
         if use_smart_review:
             if duration < 2.0: new_weight = max(1, current_weight - 5)
@@ -142,7 +129,7 @@ def handle_answer(selected_opt):
             st.session_state.word_weights[target_word] = new_weight
     else:
         st.session_state.combo = 0 
-        st.session_state.last_result_msg = ("error", f"❌ Toang rồi ông cháu: '{quiz['q']}' là '{quiz['a']}' chứ không phải '{selected_opt}'")
+        st.session_state.last_result_msg = ("error", f"❌ Sai rồi: '{quiz['q']}' là '{quiz['a']}' chứ không phải '{selected_opt}'")
         st.session_state.word_weights[target_word] = min(100, current_weight + 15)
 
     st.session_state.recent_history.append(target_word)
@@ -157,7 +144,7 @@ def ignore_current_word():
         st.session_state.combo = 0; generate_new_question()
 
 # --- GIAO DIỆN CHÍNH ---
-st.markdown(f'<h1 class="main-title">Chủ đề {st.session_state.get("selected_sheet_name", "Loading...")}</h1>', unsafe_allow_html=True)
+st.markdown(f'<h1 class="main-title">🌸 {st.session_state.get("selected_sheet_name", "Loading...")}</h1>', unsafe_allow_html=True)
 
 @st.fragment
 def show_quiz_area():
@@ -166,6 +153,7 @@ def show_quiz_area():
 
     quiz = st.session_state.quiz
     
+    # 1. Header
     c1, c2, c3 = st.columns([2, 1, 2])
     with c1: st.caption(f"🏆 Điểm: **{st.session_state.score}/{st.session_state.total}**")
     with c2: 
@@ -175,34 +163,35 @@ def show_quiz_area():
 
     if st.session_state.last_result_msg:
         mstype, msg = st.session_state.last_result_msg
-        if mstype == "success": st.success(msg, icon="✅")
-        else: st.error(msg, icon="⚠️")
+        if mstype == "success": st.markdown(f'<div class="result-box result-success">{msg}</div>', unsafe_allow_html=True)
+        else: st.markdown(f'<div class="result-box result-error">{msg}</div>', unsafe_allow_html=True)
         st.session_state.last_result_msg = None
 
-    # Card Câu Hỏi
-    col_q, col_btn = st.columns([8, 2], vertical_alignment="center") 
-    with col_q: st.markdown(f'<div class="main-card"><h1>{quiz["q"]}</h1></div>', unsafe_allow_html=True)
-    with col_btn:
-        if st.button("Bỏ qua", key="btn_ignore_top", use_container_width=True, help="Tạm ẩn từ này"):
-            ignore_current_word(); st.rerun()
+    # 2. KHUNG CÂU HỎI (Full Width)
+    st.markdown(f'<div class="main-card"><h1>{quiz["q"]}</h1></div>', unsafe_allow_html=True)
     
-    # Audio
-    col1, col2, col3 = st.columns([0.5, 9, 0.5]) 
-    with col2:
+    # 3. HÀNG: AUDIO + NÚT BỎ QUA (Nằm cạnh nhau)
+    col_audio, col_skip = st.columns([7, 3], vertical_alignment="center")
+    
+    with col_audio:
         if st.session_state.get('current_audio_b64'):
             unique_id = f"audio_{uuid.uuid4()}"
             autoplay_attr = "autoplay" if auto_play else ""
             html_audio = f"""
-                <div style="display: flex; justify-content: center; align-items: center; margin-top: 5px; margin-bottom: 25px;">
+                <div style="display: flex; align-items: center; width: 100%;">
                     <audio id="{unique_id}" src="{st.session_state.current_audio_b64}" {autoplay_attr} controls 
-                    style="width: 100%; max-width: 400px; height: 45px;"></audio>
+                    style="width: 100%; height: 40px;"></audio>
                 </div>
             """
-            st.components.v1.html(html_audio, height=80)
+            st.components.v1.html(html_audio, height=50)
+            
+    with col_skip:
+        if st.button("Bỏ qua", key="btn_ignore_side", use_container_width=True, help="Tạm ẩn từ này"):
+            ignore_current_word(); st.rerun()
 
     st.write("") 
 
-    # Đáp án
+    # 4. ĐÁP ÁN
     if st.session_state.mode == "🗣️ Luyện Phát Âm (Beta)":
         c1, c2, c3 = st.columns([1, 1, 1])
         with c2: 
@@ -221,4 +210,4 @@ def show_quiz_area():
                 st.button(opt, key=uuid.uuid4(), on_click=handle_answer, args=(opt,), use_container_width=True)
 
 show_quiz_area()
-st.markdown(f'<div class="author-text">Made by đại ca {AUTHOR}</div>', unsafe_allow_html=True)
+st.markdown(f'<div class="author-text">Made by {AUTHOR} 🌸</div>', unsafe_allow_html=True)
