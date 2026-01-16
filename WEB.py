@@ -158,7 +158,6 @@ if 'start_time' not in st.session_state: st.session_state.start_time = 0
 if 'mode' not in st.session_state: st.session_state.mode = "Anh ➔ Việt" 
 if 'last_audio_bytes' not in st.session_state: st.session_state.last_audio_bytes = None
 if 'combo' not in st.session_state: st.session_state.combo = 0
-# MỚI: Danh sách từ bị ẩn trong phiên này
 if 'ignored_words' not in st.session_state: st.session_state.ignored_words = []
 
 def reset_quiz():
@@ -196,7 +195,7 @@ with st.sidebar:
     if st.button("Reset điểm & Thuật toán"):
         st.session_state.score = 0; st.session_state.total = 0; st.session_state.word_weights = {} 
         st.session_state.recent_history = []; st.session_state.last_audio_bytes = None; st.session_state.combo = 0
-        st.session_state.ignored_words = [] # Reset cả danh sách ẩn
+        st.session_state.ignored_words = []
         reset_quiz(); st.rerun()
         
     st.divider()
@@ -209,21 +208,21 @@ with st.sidebar:
 
 data = load_data()
 
-# --- LOGIC THÔNG MINH (ĐÃ UPDATE BỘ LỌC ẨN TỪ) ---
+# --- LOGIC THÔNG MINH ---
 def generate_new_question():
     if len(data) < 2: return
     
-    # BƯỚC 1: Lọc bỏ các từ nằm trong danh sách IGNOGED (Tạm ẩn)
+    # 1. Lọc bỏ các từ bị ẩn
     pool_after_ignore = [d for d in data if d[COL_ENG] not in st.session_state.ignored_words]
     
     if not pool_after_ignore:
         st.warning("Bạn đã ẩn hết sạch từ rồi! Hãy bấm Reset hoặc tải lại trang.")
         return
 
-    # BƯỚC 2: Lọc bỏ các từ vừa mới gặp (trong recent_history)
+    # 2. Lọc bỏ các từ vừa mới gặp
     if len(pool_after_ignore) > 8:
         available_pool = [d for d in pool_after_ignore if d[COL_ENG] not in st.session_state.recent_history]
-        if not available_pool: available_pool = pool_after_ignore # Fallback
+        if not available_pool: available_pool = pool_after_ignore 
     else:
         available_pool = pool_after_ignore
 
@@ -241,7 +240,6 @@ def generate_new_question():
     else:
         target = random.choice(available_pool)
 
-    # Chọn đáp án nhiễu từ toàn bộ data gốc (trừ target) để đa dạng
     others = random.sample([d for d in data if d != target], min(3, len(data)-1))
     
     if st.session_state.mode == "Anh ➔ Việt":
@@ -292,7 +290,7 @@ def ignore_current_word():
         current_word = st.session_state.quiz['raw_en']
         st.session_state.ignored_words.append(current_word)
         st.toast(f"Đã ẩn từ: {current_word} 🙈", icon="✅")
-        st.session_state.combo = 0 # Reset combo để tránh cheat
+        st.session_state.combo = 0 
         generate_new_question()
 
 # --- GIAO DIỆN CHÍNH ---
@@ -319,7 +317,16 @@ def show_quiz_area():
         else: st.error(msg, icon="⚠️")
         st.session_state.last_result_msg = None
 
-    st.markdown(f'<div class="main-card"><h1>{quiz["q"]}</h1></div>', unsafe_allow_html=True)
+    # --- KHU VỰC CÂU HỎI VÀ NÚT ẨN (ĐÃ UPDATE LAYOUT NGANG) ---
+    col_q, col_btn = st.columns([8, 2]) # Chia 8 phần cho câu hỏi, 2 phần cho nút
+    with col_q:
+        st.markdown(f'<div class="main-card"><h1>{quiz["q"]}</h1></div>', unsafe_allow_html=True)
+    with col_btn:
+        st.write("") # Spacer để nút không bị dính lên trên
+        # Nút ẩn nhỏ gọn bên phải
+        if st.button("🙈 Ẩn", key="btn_ignore_top", help="Tạm ẩn từ này khỏi phiên học"):
+            ignore_current_word()
+            st.rerun()
     
     # Audio
     col1, col2, col3 = st.columns([0.5, 9, 0.5]) 
@@ -350,25 +357,11 @@ def show_quiz_area():
             else: st.session_state.combo = 0; st.error(f"Bạn nói: {spoken}")
         if st.button("Bỏ qua"): st.session_state.combo = 0; generate_new_question(); st.rerun()
         
-        # NÚT ẨN TỪ (CHẾ ĐỘ NÓI)
-        if st.button("🙈 Tạm ẩn từ này"):
-            ignore_current_word()
-            st.rerun()
-            
     else:
         col_1, col_2 = st.columns(2)
         for idx, opt in enumerate(quiz['opts']):
             with (col_1 if idx % 2 == 0 else col_2): 
                 st.button(opt, key=uuid.uuid4(), on_click=handle_answer, args=(opt,), use_container_width=True)
-        
-        # NÚT ẨN TỪ (CHẾ ĐỘ TRẮC NGHIỆM)
-        st.write("")
-        # Dùng columns để căn giữa nút ẩn
-        b1, b2, b3 = st.columns([1, 2, 1])
-        with b2:
-            if st.button("🙈 Tạm ẩn từ này", type="secondary"):
-                ignore_current_word()
-                st.rerun()
 
 show_quiz_area()
 st.markdown(f'<div class="author-text">Made by {AUTHOR} 🌸</div>', unsafe_allow_html=True)
