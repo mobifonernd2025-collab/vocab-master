@@ -104,6 +104,20 @@ def apply_css(theme):
                 background-color: {theme['btn_hover']} !important; transform: scale(0.96); transition: transform 0.05s;
             }}
         }}
+
+        /* --- THANH TIẾN ĐỘ CẦU VỒNG (GRADIENT & SHIMMER) --- */
+        .stProgress > div > div > div > div {{
+            background: linear-gradient(90deg, {theme['border']}, {theme['progress']}, {theme['text']});
+            background-size: 200% 100%;
+            border-radius: 10px;
+            animation: gradientMove 3s ease infinite;
+        }}
+        
+        @keyframes gradientMove {{
+            0% {{ background-position: 0% 50%; }}
+            50% {{ background-position: 100% 50%; }}
+            100% {{ background-position: 0% 50%; }}
+        }}
         
         .combo-text {{ text-align: center; font-size: 1.1em; font-weight: 800; color: #FF4500; margin-bottom: 5px; animation: pop 0.5s infinite alternate; }}
         .author-text {{ text-align: center; color: {theme['sub_text']}; font-size: 0.85em; margin-top: 15px; opacity: 0.8; font-style: italic; }}
