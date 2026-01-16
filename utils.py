@@ -44,13 +44,18 @@ def get_gspread_client():
         return None
 
 # Hàm tải dữ liệu
-def load_data():
+@st.cache_data(ttl=300) # <--- Thêm dòng này: Lưu dữ liệu trong 10 phút (600s)
+def load_data(sheet_name): # <--- Thêm tham số sheet_name vào đây
     try:
+        # Không dùng st.session_state ở trong này nữa để tránh lỗi cache
         client = get_gspread_client()
         if not client: return []
         spreadsheet = client.open_by_key(FILE_ID)
-        sheet_name = st.session_state.get('selected_sheet_name')
-        if sheet_name: ws = spreadsheet.worksheet(sheet_name)
-        else: ws = spreadsheet.get_worksheet(0)
+        if sheet_name: 
+            ws = spreadsheet.worksheet(sheet_name)
+        else: 
+            ws = spreadsheet.get_worksheet(0)
         return [r for r in ws.get_all_records() if r.get(COL_ENG) and r.get(COL_VIE)]
-    except: return []
+    except Exception as e:
+        # st.error(f"Lỗi tải data: {e}") # Có thể bỏ comment để debug
+        return []
