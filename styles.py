@@ -23,6 +23,10 @@ def apply_css(theme):
             text-align: center;
             margin-bottom: 10px;
             margin-top: 5px;
+
+            max-width: 80% !important;   /* Thu nhỏ chiều rộng còn 90% (số càng nhỏ càng hẹp) */
+            margin-left: auto !important;  /* Tự động căn giữa trái */
+            margin-right: auto !important; /* Tự động căn giữa phải */
         }}
         
         .main-card h1 {{ 
