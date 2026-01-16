@@ -19,12 +19,10 @@ def apply_css(theme):
             border-top: 5px solid {theme['border']}; /* Viền trên dày tạo điểm nhấn */
             
             /* Để chiều cao tự động (auto) và tăng padding để khung to ra */
-            padding: 20px 10px; 
+            padding: 10px 10px; 
             text-align: center;
             margin-bottom: 10px;
             margin-top: 5px;
-
-            max-width: 80% !important;   /* Thu nhỏ chiều rộng còn 90% (số càng nhỏ càng hẹp) */
             margin-left: auto !important;  /* Tự động căn giữa trái */
             margin-right: auto !important; /* Tự động căn giữa phải */
         }}
