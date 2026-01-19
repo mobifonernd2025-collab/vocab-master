@@ -123,25 +123,38 @@ def apply_css(theme):
         }}
 
         /* --- THANH TIẾN ĐỘ CẦU VỒNG (GRADIENT & SHIMMER) --- */
-        .stProgress > div > div > div > div {{
-            background: linear-gradient(90deg, {theme['border']}, {theme['progress']}, {theme['text']});
-            background-size: 200% 100%;
-            border-radius: 10px;
-            animation: gradientMove 3s ease infinite;
+        @keyframes rainbow-move {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* 2. Tác động sâu vào cấu trúc HTML của Streamlit */
+        div[data-testid="stProgress"] > div > div > div > div {
+            /* Dải màu cầu vồng rực rỡ */
+            background: linear-gradient(
+                90deg, 
+                #FF0000, #FF7F00, #FFFF00, #00FF00, #0000FF, #4B0082, #9400D3, #FF0000
+            ) !important;
+            
+            /* Kích thước nền lớn để có chỗ cho animation chạy */
+            background-size: 400% 400% !important;
+            
+            /* Bo tròn và hiệu ứng chuyển động */
+            border-radius: 10px !important;
+            animation: rainbow-move 4s linear infinite !important;
+            
+            /* [MỚI] Hiệu ứng phát sáng (Glow) */
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5), 
+                        0 0 20px rgba(0, 255, 255, 0.3) !important;
+        }
+        
+        /* Làm nền của thanh progress mờ đi để thanh màu nổi bật hơn */
+        div[data-testid="stProgress"] {{
+            background-color: rgba(0,0,0,0.05) !important;
+            border-radius: 10px !important;
+            padding: 2px !important; /* Tạo viền nhỏ */
         }}
-        
-        @keyframes gradientMove {{
-            0% {{ background-position: 0% 50%; }}
-            50% {{ background-position: 100% 50%; }}
-            100% {{ background-position: 0% 50%; }}
-        }}
-        
-        .combo-text {{ text-align: center; font-size: 1.1em; font-weight: 800; color: #FF4500; margin-bottom: 5px; animation: pop 0.5s infinite alternate; }}
-        .author-text {{ text-align: center; color: {theme['sub_text']}; font-size: 0.85em; margin-top: 15px; opacity: 0.8; font-style: italic; }}
-        
-        p, label {{ color: {theme['text']} !important; margin-bottom: 0px !important; }}
-        .stCaption {{ color: {theme['sub_text']} !important; font-size: 0.95em !important; font-weight: 600; }}
-        .stProgress > div > div > div > div {{ background-color: {theme['progress']} !important; border-radius: 10px; transition: width 0.4s ease; }}
 
         /* --- [MỚI] CSS CHO HIỆU ỨNG ĐÁP ÁN (NẰM TRONG TAG STYLE) --- */
         .btn-fake {{
