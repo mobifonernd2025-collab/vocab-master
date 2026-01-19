@@ -1,3 +1,4 @@
+# WEB.py
 import streamlit as st
 import random
 import time
@@ -5,13 +6,13 @@ import uuid
 from streamlit_mic_recorder import mic_recorder
 
 # --- IMPORT TỪ CÁC FILE BÊN CẠNH ---
-from config import AUTHOR, COL_ENG, COL_VIE, get_theme, FILE_ID # <--- Nhớ import FILE_ID ở đây
+from config import AUTHOR, COL_ENG, COL_VIE, get_theme, FILE_ID 
 from styles import apply_css
 from utils import get_audio_base64, recognize_speech, get_gspread_client, load_data
 
 st.set_page_config(page_title=f"Vocab Master - {AUTHOR}", page_icon="🌸", layout="centered")
 
-# --- KHỞI TẠO STATE (Giữ nguyên) ---
+# --- KHỞI TẠO STATE ---
 if 'theme_mode' not in st.session_state: st.session_state.theme_mode = "Sakura (Hồng)"
 if 'score' not in st.session_state: st.session_state.score = 0
 if 'total' not in st.session_state: st.session_state.total = 0
@@ -48,7 +49,6 @@ def get_sheet_names():
             return [ws.title for ws in spreadsheet.worksheets()]
         return []
     except Exception as e:
-        # st.error(f"Lỗi tải danh sách sheet: {e}") # Bật lên nếu cần debug
         return []
 
 # --- GỌI HÀM ĐỂ LẤY DANH SÁCH ---
@@ -66,9 +66,8 @@ with st.sidebar:
     
     st.divider()
     
-    # 2. Chọn Chủ đề (Nếu list có dữ liệu thì mới hiện)
+    # 2. Chọn Chủ đề
     if sheet_names:
-        # Mặc định chọn cái đầu tiên nếu chưa chọn
         current_idx = 0
         if st.session_state.get('selected_sheet_name') in sheet_names:
             current_idx = sheet_names.index(st.session_state.selected_sheet_name)
@@ -93,18 +92,66 @@ with st.sidebar:
         st.session_state.recent_history = []; st.session_state.last_audio_bytes = None; st.session_state.combo = 0
         st.session_state.ignored_words = []
         reset_quiz(); st.rerun()
+
+    st.divider()
+
+    # --- [TÍNH NĂNG MỚI] THÊM TỪ / CHỦ ĐỀ ---
+    with st.expander("➕ Thêm Từ / Chủ đề mới"):
+        action = st.radio("Bạn muốn làm gì?", ["Thêm từ vựng", "Tạo chủ đề mới"])
+        
+        if action == "Thêm từ vựng":
+            with st.form("add_word_form"):
+                # Mặc định chọn sheet hiện tại
+                default_idx = 0
+                if st.session_state.get('selected_sheet_name') in sheet_names:
+                    default_idx = sheet_names.index(st.session_state.selected_sheet_name)
+                
+                target_sheet = st.selectbox("Chọn chủ đề:", sheet_names, index=default_idx)
+                new_en = st.text_input("Từ tiếng Anh:")
+                new_vi = st.text_input("Nghĩa tiếng Việt:")
+                
+                submitted = st.form_submit_button("Lưu từ mới")
+                
+                if submitted:
+                    if new_en and new_vi:
+                        from utils import add_vocabulary 
+                        if add_vocabulary(target_sheet, new_en, new_vi):
+                            st.success(f"Đã thêm: {new_en}")
+                            st.cache_data.clear() # Xóa cache để cập nhật
+                            time.sleep(1)
+                            st.rerun()
+                        else:
+                            st.error("Lỗi kết nối!")
+                    else:
+                        st.warning("Nhập đủ thông tin nhé!")
+
+        else: # Tạo chủ đề mới
+            with st.form("create_topic_form"):
+                new_topic_name = st.text_input("Tên chủ đề mới:")
+                create_submitted = st.form_submit_button("Tạo chủ đề")
+                
+                if create_submitted:
+                    if new_topic_name:
+                        from utils import create_new_topic
+                        if create_new_topic(new_topic_name):
+                            st.success(f"Đã tạo: {new_topic_name}")
+                            st.cache_data.clear()
+                            time.sleep(1)
+                            st.rerun()
+                        else:
+                            st.error("Tên trùng hoặc lỗi mạng!")
+                    else:
+                        st.warning("Chưa nhập tên chủ đề!")
         
     st.divider()
     st.markdown(f"<div style='text-align: center; color: gray; font-size: 0.9em;'><b>{AUTHOR} MobiFone HighTech</b><br><i>Phiên bản này được viết ra nhờ sự stress khi học từ vựng 😅</i></div>", unsafe_allow_html=True)
 
-# --- LOAD DATA (ĐOẠN SAU GIỮ NGUYÊN) ---
-# Lưu ý sửa dòng gọi hàm load_data bên dưới cho đúng logic mới
+# --- LOAD DATA ---
 current_sheet = st.session_state.get('selected_sheet_name', sheet_names[0] if sheet_names else None)
 data = load_data(current_sheet)
 
 # --- LOGIC ---
 def generate_new_question():
-    # 1. Reset trạng thái về chế độ trả lời
     st.session_state.quiz_state = "ANSWERING"
     st.session_state.user_choice = None
     
@@ -121,7 +168,7 @@ def generate_new_question():
     target = None
     if use_smart_review:
         weights = [st.session_state.word_weights.get(d[COL_ENG], 50) for d in available_pool]
-        weights = [w if w > 0 else 1 for w in weights] # Fix lỗi weight = 0
+        weights = [w if w > 0 else 1 for w in weights] 
         target = random.choices(available_pool, weights=weights, k=1)[0]
     else: target = random.choice(available_pool)
 
@@ -143,9 +190,8 @@ def handle_answer(selected_opt):
     target_word = quiz['raw_en']
     current_weight = st.session_state.word_weights.get(target_word, 10)
     
-    # 1. LƯU LẠI LỰA CHỌN VÀ CHUYỂN SANG CHẾ ĐỘ "REVIEW"
     st.session_state.user_choice = selected_opt
-    st.session_state.quiz_state = "REVIEW" # <-- Quan trọng
+    st.session_state.quiz_state = "REVIEW" 
     st.session_state.total += 1
 
     if selected_opt == quiz['a']:
@@ -162,6 +208,7 @@ def handle_answer(selected_opt):
 
     st.session_state.recent_history.append(target_word)
     if len(st.session_state.recent_history) > 5: st.session_state.recent_history.pop(0)
+
 def ignore_current_word():
     if st.session_state.quiz:
         current_word = st.session_state.quiz['raw_en']
@@ -188,7 +235,7 @@ def show_quiz_area():
     st.progress(score_val)
 
     msg_class = "result-hidden"
-    msg_content = "&nbsp;" # Ký tự trống để giữ chiều cao dòng
+    msg_content = "&nbsp;" 
 
     if st.session_state.last_result_msg:
         mstype, msg = st.session_state.last_result_msg
@@ -196,10 +243,11 @@ def show_quiz_area():
         else: msg_class = "result-error"
         msg_content = msg
     st.markdown(f'<div class="result-box {msg_class}">{msg_content}</div>', unsafe_allow_html=True)
-    # 2. KHUNG CÂU HỎI (Full Width)
+    
+    # 2. KHUNG CÂU HỎI
     st.markdown(f'<div class="main-card"><h1>{quiz["q"]}</h1></div>', unsafe_allow_html=True)
     
-    # 3. HÀNG: AUDIO + NÚT BỎ QUA (Nằm cạnh nhau)
+    # 3. HÀNG: AUDIO + NÚT BỎ QUA
     col_audio, col_skip = st.columns([7, 3], vertical_alignment="center")
     
     with col_audio:
@@ -222,12 +270,10 @@ def show_quiz_area():
 
     # 4. ĐÁP ÁN
     if st.session_state.mode == "🗣️ Luyện Phát Âm (Beta)":
-        # ... (Phần code Luyện Phát Âm giữ nguyên không sửa gì) ...
         c1, c2, c3 = st.columns([1, 1, 1])
         with c2: 
             audio = mic_recorder(start_prompt="🎙️ Nói", stop_prompt="⏹️ Dừng", key="static_mic_recorder", format="wav")
         if audio and audio['bytes'] != st.session_state.last_audio_bytes:
-             # (Logic cũ của phần mic...)
              st.session_state.last_audio_bytes = audio['bytes']
              spoken = recognize_speech(audio['bytes'])
              if spoken == quiz['raw_en'].lower().strip():
@@ -236,33 +282,26 @@ def show_quiz_area():
         if st.button("Câu khác ➡️"): generate_new_question(); st.rerun()
 
     else:
-        # --- LOGIC MỚI CHO TRẮC NGHIỆM ---
-        
-        # TRƯỜNG HỢP 1: ĐANG TRẢ LỜI (Hiện nút bấm để chọn)
+        # TRƯỜNG HỢP 1: ĐANG TRẢ LỜI
         if st.session_state.quiz_state == "ANSWERING":
             col_1, col_2 = st.columns(2)
             for idx, opt in enumerate(quiz['opts']):
                 with (col_1 if idx % 2 == 0 else col_2): 
-                    # Nút bấm bình thường
                     st.button(opt, key=f"btn_{uuid.uuid4()}", on_click=handle_answer, args=(opt,), use_container_width=True)
         
-        # TRƯỜNG HỢP 2: ĐÃ CHỌN XONG (Hiện màu sắc + Tự động chuyển)
+        # TRƯỜNG HỢP 2: ĐÃ CHỌN XONG
         else:
             col_1, col_2 = st.columns(2)
             correct_answer = quiz['a']
             user_choice = st.session_state.user_choice
             
-            # Vẽ các ô màu
             for idx, opt in enumerate(quiz['opts']):
                 with (col_1 if idx % 2 == 0 else col_2):
                     if opt == correct_answer:
-                        # Đáp án đúng -> Màu Xanh
                         st.markdown(f'<div class="btn-fake btn-correct-visual">✅ {opt}</div>', unsafe_allow_html=True)
                     elif opt == user_choice and opt != correct_answer:
-                        # Chọn sai -> Màu Đỏ
                         st.markdown(f'<div class="btn-fake btn-wrong-visual">❌ {opt}</div>', unsafe_allow_html=True)
                     else:
-                        # Các cái khác -> Màu Xám
                         st.markdown(f'<div class="btn-fake btn-neutral-visual">{opt}</div>', unsafe_allow_html=True)
     
             time.sleep(1.5) 
