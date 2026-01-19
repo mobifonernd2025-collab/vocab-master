@@ -59,3 +59,83 @@ def load_data(sheet_name): # <--- Thêm tham số sheet_name vào đây
     except Exception as e:
         # st.error(f"Lỗi tải data: {e}") # Có thể bỏ comment để debug
         return []
+
+# --- THÊM VÀO CUỐI FILE utils.py ---
+
+def add_vocabulary(sheet_name, en_word, vi_word):
+    """Thêm cặp từ mới vào sheet chỉ định"""
+    try:
+        client = get_gspread_client()
+        if not client: return False
+        
+        spreadsheet = client.open_by_key(FILE_ID)
+        ws = spreadsheet.worksheet(sheet_name)
+        
+        # Thêm dòng mới vào cuối
+        ws.append_row([en_word, vi_word])
+        return True
+    except Exception as e:
+        print(f"Lỗi thêm từ: {e}")
+        return False
+
+def create_new_topic(new_topic_name):
+    """Tạo sheet chủ đề mới và điền Header chuẩn"""
+    try:
+        client = get_gspread_client()
+        if not client: return False
+        
+        spreadsheet = client.open_by_key(FILE_ID)
+        
+        # Kiểm tra xem tên đã tồn tại chưa
+        existing_sheets = [ws.title for ws in spreadsheet.worksheets()]
+        if new_topic_name in existing_sheets:
+            return False
+            
+        # Tạo sheet mới
+        new_ws = spreadsheet.add_worksheet(title=new_topic_name, rows=100, cols=5)
+        
+        # QUAN TRỌNG: Thêm header chuẩn để App đọc được
+        new_ws.append_row([COL_ENG, COL_VIE]) 
+        return True
+    except Exception as e:
+        print(f"Lỗi tạo sheet: {e}")
+        return False# --- THÊM VÀO CUỐI FILE utils.py ---
+
+def add_vocabulary(sheet_name, en_word, vi_word):
+    """Thêm cặp từ mới vào sheet chỉ định"""
+    try:
+        client = get_gspread_client()
+        if not client: return False
+        
+        spreadsheet = client.open_by_key(FILE_ID)
+        ws = spreadsheet.worksheet(sheet_name)
+        
+        # Thêm dòng mới vào cuối
+        ws.append_row([en_word, vi_word])
+        return True
+    except Exception as e:
+        print(f"Lỗi thêm từ: {e}")
+        return False
+
+def create_new_topic(new_topic_name):
+    """Tạo sheet chủ đề mới và điền Header chuẩn"""
+    try:
+        client = get_gspread_client()
+        if not client: return False
+        
+        spreadsheet = client.open_by_key(FILE_ID)
+        
+        # Kiểm tra xem tên đã tồn tại chưa
+        existing_sheets = [ws.title for ws in spreadsheet.worksheets()]
+        if new_topic_name in existing_sheets:
+            return False
+            
+        # Tạo sheet mới
+        new_ws = spreadsheet.add_worksheet(title=new_topic_name, rows=100, cols=5)
+        
+        # QUAN TRỌNG: Thêm header chuẩn để App đọc được
+        new_ws.append_row([COL_ENG, COL_VIE]) 
+        return True
+    except Exception as e:
+        print(f"Lỗi tạo sheet: {e}")
+        return False
