@@ -187,12 +187,15 @@ def show_quiz_area():
     score_val = st.session_state.score / (st.session_state.total if st.session_state.total > 0 else 1)
     st.progress(score_val)
 
+    msg_class = "result-hidden"
+    msg_content = "&nbsp;" # Ký tự trống để giữ chiều cao dòng
+
     if st.session_state.last_result_msg:
         mstype, msg = st.session_state.last_result_msg
-        if mstype == "success": st.markdown(f'<div class="result-box result-success">{msg}</div>', unsafe_allow_html=True)
-        else: st.markdown(f'<div class="result-box result-error">{msg}</div>', unsafe_allow_html=True)
-        st.session_state.last_result_msg = None
-
+        if mstype == "success": msg_class = "result-success"
+        else: msg_class = "result-error"
+        msg_content = msg
+    st.markdown(f'<div class="result-box {msg_class}">{msg_content}</div>', unsafe_allow_html=True)
     # 2. KHUNG CÂU HỎI (Full Width)
     st.markdown(f'<div class="main-card"><h1>{quiz["q"]}</h1></div>', unsafe_allow_html=True)
     
