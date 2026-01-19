@@ -4,27 +4,37 @@ import streamlit as st
 def apply_css(theme):
     st.markdown(f"""
         <style>
-        /* --- 1. IMPORT FONT --- */
         @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
 
-        /* --- 2. ANIMATION --- */
+        /* --- GLOBAL & ANIMATIONS --- */
+        html, body, [class*="css"], button, input, textarea, p, h1, h2, h3 {{
+            font-family: 'Nunito', sans-serif !important;
+        }}
+        
+        /* 1. Animation xuất hiện của khung câu hỏi */
         @keyframes quickFadeZoom {{
             0% {{ opacity: 0; transform: scale(0.96) translateY(5px); }}
             100% {{ opacity: 1; transform: scale(1) translateY(0); }}
         }}
-        @keyframes btnSlideUp {{
-            0% {{ opacity: 0; transform: translateY(10px); }}
-            100% {{ opacity: 1; transform: translateY(0); }}
-        }}
-        @keyframes shake {{ 0%, 100% {{ transform: translateX(0); }} 25% {{ transform: translateX(-5px); }} 75% {{ transform: translateX(5px); }} }}
-        @keyframes pop {{ 0% {{ transform: scale(0.9); opacity: 0; }} 60% {{ transform: scale(1.05); opacity: 1; }} 100% {{ transform: scale(1); }} }}
 
-        /* --- 3. GLOBAL STYLES --- */
-        html, body, [class*="css"], button, input, textarea, p, h1, h2, h3 {{
-            font-family: 'Nunito', sans-serif !important;
+        /* 2. [MỚI] Animation BIẾN HÌNH sang ĐÚNG (Trắng -> Xanh) */
+        @keyframes turnGreen {{
+            0% {{ background-color: {theme['btn_bg']}; color: {theme['text']}; transform: scale(1); border-color: {theme['border']}; }}
+            50% {{ transform: scale(1.02); }} /* Hơi phình ra một chút */
+            100% {{ background-color: #D4EDDA; color: #155724; transform: scale(1); border-color: #C3E6CB; }}
         }}
 
-        .stApp {{ background-color: {theme['bg']}; transition: background-color 0.3s ease; }}
+        /* 3. [MỚI] Animation BIẾN HÌNH sang SAI (Trắng -> Đỏ) */
+        @keyframes turnRed {{
+            0% {{ background-color: {theme['btn_bg']}; color: {theme['text']}; transform: scale(1); border-color: {theme['border']}; }}
+            20% {{ transform: translateX(-5px); }} /* Rung lắc nhẹ */
+            40% {{ transform: translateX(5px); }}
+            60% {{ transform: translateX(-5px); }}
+            100% {{ background-color: #F8D7DA; color: #721C24; transform: scale(1); border-color: #F5C6CB; }}
+        }}
+
+        /* --- CẤU HÌNH GIAO DIỆN CHÍNH --- */
+        .stApp {{ background-color: {theme['bg']}; transition: background-color 0.5s ease; }}
         div[data-testid="stVerticalBlock"] {{ gap: 0.5rem !important; }}
         div[data-testid="stStatusWidget"] {{ visibility: hidden; }}
 
@@ -38,8 +48,7 @@ def apply_css(theme):
             box-shadow: 0 4px 15px rgba(0,0,0,0.08); border-top: 5px solid {theme['border']}; 
             padding: 1px 10px !important; text-align: center;
             margin-bottom: 10px; margin-top: 5px;
-            margin-left: auto !important; margin-right: auto !important;
-            animation: quickFadeZoom 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); will-change: transform, opacity;
+            animation: quickFadeZoom 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
         }}
         
         .main-card h1 {{ 
@@ -47,20 +56,17 @@ def apply_css(theme):
             margin: 0 !important; font-weight: 800 !important; line-height: 1.2 !important;
         }}
 
-        /* --- RESULT BOX (ĐÃ SỬA CỐ ĐỊNH CHIỀU CAO) --- */
+        /* --- RESULT BOX --- */
         .result-box {{
-            min-height: 60px; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center;
+            min-height: 60px; display: flex; align-items: center; justify-content: center;
             padding: 5px 15px; border-radius: 12px; font-weight: 700; font-size: 1.1rem; text-align: center; margin-bottom: 10px;
             transition: all 0.3s ease;
         }}
-        .result-success {{ background-color: #D1E7DD; color: #0f5132; border: 1px solid #badbcc; animation: pop 0.4s; }}
-        .result-error {{ background-color: #F8D7DA; color: #842029; border: 1px solid #f5c2c7; animation: shake 0.3s; }}
-        .result-hidden {{ background-color: transparent; color: transparent; border: 1px solid transparent; box-shadow: none; user-select: none; }}
+        .result-success {{ background-color: #D1E7DD; color: #0f5132; border: 1px solid #badbcc; }}
+        .result-error {{ background-color: #F8D7DA; color: #842029; border: 1px solid #f5c2c7; }}
+        .result-hidden {{ background-color: transparent; color: transparent; border: 1px solid transparent; user-select: none; }}
 
-        /* --- NÚT BẤM CHÍNH --- */
+        /* --- NÚT BẤM (BUTTON) --- */
         div.stButton > button {{ 
             min-height: 3.2em !important; 
             border-radius: 15px !important; 
@@ -68,77 +74,62 @@ def apply_css(theme):
             background-color: {theme['btn_bg']}; 
             border: 2px solid {theme['border']} !important; 
             color: {theme['btn_text']} !important; 
-            width: 100%; 
-            transition: all 0.15s ease-out; 
-            outline: none !important;
-            white-space: normal !important;
-            padding: 5px !important;
-            animation: btnSlideUp 0.4s ease-out backwards;
+            width: 100%; transition: all 0.2s ease;
+            box-shadow: 0 2px 0px rgba(0,0,0,0.05); /* Bóng nhẹ giả lập độ nổi */
         }}
-        
-        div.stButton > button p {{ font-size: 22px !important; line-height: 1.1 !important; margin: 0 !important; }}
+        div.stButton > button:hover {{ transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.1); }}
+        div.stButton > button:active {{ transform: scale(0.98); }}
+        div.stButton > button p {{ font-size: 20px !important; margin: 0 !important; }}
 
-        /* --- NÚT SIDEBAR --- */
+        /* Nút Sidebar nhỏ lại */
         section[data-testid="stSidebar"] div.stButton > button {{
-            min-height: auto !important; height: auto !important; padding: 0.5em 1em !important; 
-            font-size: 16px !important; margin-top: 10px !important;
-        }}
-        section[data-testid="stSidebar"] div.stButton > button p {{ font-size: 16px !important; line-height: 1.5 !important; }}
-
-        @media (hover: hover) {{
-            div.stButton > button:hover {{ 
-                background-color: {theme['btn_hover']} !important; color: {theme['text']} !important; 
-                transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            }}
+            min-height: auto !important; padding: 0.5em 1em !important; font-size: 16px !important; margin-top: 10px !important;
         }}
 
-        @media (hover: none) {{
-            div.stButton > button:hover, div.stButton > button:focus {{ 
-                background-color: {theme['btn_bg']} !important; color: {theme['btn_text']} !important; border-color: {theme['border']} !important; box-shadow: none !important;
-            }}
-            div.stButton > button:active {{ 
-                background-color: {theme['btn_hover']} !important; transform: scale(0.96); transition: transform 0.05s;
-            }}
-        }}
-
-        /* --- THANH TIẾN ĐỘ CẦU VỒNG (SUPER RAINBOW - ĐÃ FIX NGOẶC KÉP) --- */
-        @keyframes rainbow-move {{
-            0% {{ background-position: 0% 50%; }}
-            50% {{ background-position: 100% 50%; }}
-            100% {{ background-position: 0% 50%; }}
-        }}
-
+        /* --- THANH TIẾN ĐỘ CẦU VỒNG --- */
+        @keyframes rainbow-move {{ 0% {{ background-position: 0% 50%; }} 50% {{ background-position: 100% 50%; }} 100% {{ background-position: 0% 50%; }} }}
         div[data-testid="stProgress"] > div > div > div > div {{
             background: linear-gradient(90deg, #FF0000, #FF7F00, #FFFF00, #00FF00, #0000FF, #4B0082, #9400D3, #FF0000) !important;
-            background-size: 400% 400% !important;
-            border-radius: 10px !important;
+            background-size: 400% 400% !important; border-radius: 10px !important;
             animation: rainbow-move 4s linear infinite !important;
-            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5), 0 0 20px rgba(0, 255, 255, 0.3) !important;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
         }}
+        div[data-testid="stProgress"] {{ background-color: rgba(0,0,0,0.05) !important; border-radius: 10px !important; padding: 2px !important; }}
         
-        div[data-testid="stProgress"] {{
-            background-color: rgba(0,0,0,0.05) !important;
-            border-radius: 10px !important;
-            padding: 2px !important;
-        }}
-        
-        .combo-text {{ text-align: center; font-size: 1.1em; font-weight: 800; color: #FF4500; margin-bottom: 5px; animation: pop 0.5s infinite alternate; }}
-        .author-text {{ text-align: center; color: {theme['sub_text']}; font-size: 0.85em; margin-top: 15px; opacity: 0.8; font-style: italic; }}
-        
-        p, label {{ color: {theme['text']} !important; margin-bottom: 0px !important; }}
-        .stCaption {{ color: {theme['sub_text']} !important; font-size: 0.95em !important; font-weight: 600; }}
-
-        /* --- HIỆU ỨNG ĐÁP ÁN (BTN FAKE) --- */
+        /* --- [QUAN TRỌNG] CLASS CHO HIỆU ỨNG ĐÁP ÁN MỀM MẠI --- */
         .btn-fake {{
             display: block; width: 100%; padding: 12px; margin: 5px 0;
             border-radius: 15px; font-weight: 700; text-align: center;
-            font-size: 18px; cursor: default; border: 2px solid transparent;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            transition: all 0.3s ease;
+            font-size: 20px; /* Khớp size với nút thật */
+            cursor: default; 
+            border: 2px solid transparent;
+            box-shadow: 0 2px 0px rgba(0,0,0,0.05);
         }}
-        .btn-correct-visual {{ background-color: #D4EDDA !important; color: #155724 !important; border-color: #C3E6CB !important; }}
-        .btn-wrong-visual {{ background-color: #F8D7DA !important; color: #721C24 !important; border-color: #F5C6CB !important; opacity: 0.9; }}
-        .btn-neutral-visual {{ background-color: #f0f2f6 !important; color: #999 !important; border-color: #eee !important; opacity: 0.6; }}
+        
+        /* Khi ĐÚNG: Chuyển từ trắng sang xanh từ từ trong 0.5s */
+        .btn-correct-visual {{
+            animation: turnGreen 0.5s ease forwards; /* Chạy animation turnGreen */
+        }}
+        
+        /* Khi SAI: Chuyển từ trắng sang đỏ + rung lắc nhẹ */
+        .btn-wrong-visual {{
+            animation: turnRed 0.5s ease forwards; /* Chạy animation turnRed */
+            opacity: 0.9;
+        }}
+        
+        /* Nút còn lại: Mờ đi nhẹ nhàng */
+        .btn-neutral-visual {{
+            background-color: #f0f2f6 !important; color: #aaa !important;
+            border-color: #eee !important;
+            transition: all 0.5s ease; /* Mờ dần thay vì bụp phát mờ luôn */
+            opacity: 0.6;
+        }}
+
+        /* Text phụ */
+        .combo-text {{ text-align: center; font-size: 1.1em; font-weight: 800; color: #FF4500; margin-bottom: 5px; }}
+        .author-text {{ text-align: center; color: {theme['sub_text']}; font-size: 0.85em; margin-top: 15px; opacity: 0.6; font-style: italic; }}
+        p, label {{ color: {theme['text']} !important; margin-bottom: 0px !important; }}
+        .stCaption {{ color: {theme['sub_text']} !important; }}
 
         </style>
         """, unsafe_allow_html=True)
