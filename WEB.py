@@ -186,6 +186,8 @@ def generate_new_question():
     st.session_state.start_time = time.time()
 
 def handle_answer(selected_opt):
+    if st.session_state.quiz is None:
+        return # Nếu không có dữ liệu câu hỏi thì dừng lại, không làm gì cả
     quiz = st.session_state.quiz
     target_word = quiz['raw_en']
     current_weight = st.session_state.word_weights.get(target_word, 10)
