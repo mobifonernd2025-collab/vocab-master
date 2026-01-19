@@ -7,7 +7,7 @@ AUTHOR = "Thanh Xuân"
 
 def get_theme(mode):
     # 1. MINT (Xanh Bạc Hà - Tươi mới)
-    if mode == "Mint (Xanh Bạc Hà)":
+    if mode == "Mint (Xanh Dịu)":  # <--- SỬA "Bạc Hà" THÀNH "Dịu"
         return {
             "bg": "#E0F7FA", "card_bg": "#ffffff", "text": "#00695C", "sub_text": "#00897B",
             "border": "#4DB6AC", "btn_bg": "#ffffff", "btn_hover": "#B2DFDB", "btn_text": "#00695C", "progress": "#009688"
