@@ -111,7 +111,7 @@ def add_vocabulary(sheet_name, en_word, vi_word):
         ws = spreadsheet.worksheet(sheet_name)
         
         # Thêm dòng mới vào cuối
-        ws.append_row([en_word, "", vi_word,"",""])
+        ws.append_row([en_word, "", vi_word, "", ""])
         return True
     except Exception as e:
         print(f"Lỗi thêm từ: {e}")
