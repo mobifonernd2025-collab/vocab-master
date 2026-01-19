@@ -76,14 +76,13 @@ def apply_css(theme):
 
         /* --- [FIX MỚI] NÚT BẤM TRONG SIDEBAR (NHỎ LẠI) --- */
         section[data-testid="stSidebar"] div.stButton > button {{
-            min-height: auto !important; /* Bỏ chiều cao tối thiểu */
-            height: auto !important;     /* Chiều cao tự động theo nội dung */
-            padding: 0.5em 1em !important; /* Padding nhỏ gọn */
-            font-size: 16px !important;    /* Chữ nhỏ hơn */
+            min-height: auto !important; 
+            height: auto !important;     
+            padding: 0.5em 1em !important; 
+            font-size: 16px !important;    
             margin-top: 10px !important;
         }}
         
-        /* Riêng chữ trong nút Sidebar cũng phải nhỏ lại */
         section[data-testid="stSidebar"] div.stButton > button p {{
             font-size: 16px !important;
             line-height: 1.5 !important;
@@ -118,35 +117,6 @@ def apply_css(theme):
             50% {{ background-position: 100% 50%; }}
             100% {{ background-position: 0% 50%; }}
         }}
-
-        /* --- CSS CHO HIỆU ỨNG ĐÁP ÁN --- */
-        .btn-fake {
-            display: block; width: 100%; padding: 12px; margin: 5px 0;
-            border-radius: 15px; font-weight: 700; text-align: center;
-            font-size: 18px; cursor: default; border: 2px solid transparent;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            transition: all 0.3s ease;
-        }
-        
-        /* Màu xanh cho đáp án đúng */
-        .btn-correct-visual {
-            background-color: #D4EDDA !important; color: #155724 !important;
-            border-color: #C3E6CB !important;
-        }
-        
-        /* Màu đỏ cho đáp án sai */
-        .btn-wrong-visual {
-            background-color: #F8D7DA !important; color: #721C24 !important;
-            border-color: #F5C6CB !important;
-            opacity: 0.9;
-        }
-        
-        /* Màu xám mờ cho các đáp án còn lại */
-        .btn-neutral-visual {
-            background-color: #f0f2f6 !important; color: #ccc !important;
-            border-color: #eee !important;
-            opacity: 0.5;
-        }
         
         .combo-text {{ text-align: center; font-size: 1.1em; font-weight: 800; color: #FF4500; margin-bottom: 5px; animation: pop 0.5s infinite alternate; }}
         .author-text {{ text-align: center; color: {theme['sub_text']}; font-size: 0.85em; margin-top: 15px; opacity: 0.8; font-style: italic; }}
@@ -154,5 +124,32 @@ def apply_css(theme):
         p, label {{ color: {theme['text']} !important; margin-bottom: 0px !important; }}
         .stCaption {{ color: {theme['sub_text']} !important; font-size: 0.95em !important; font-weight: 600; }}
         .stProgress > div > div > div > div {{ background-color: {theme['progress']} !important; border-radius: 10px; transition: width 0.4s ease; }}
+
+        /* --- [MỚI] CSS CHO HIỆU ỨNG ĐÁP ÁN (NẰM TRONG TAG STYLE) --- */
+        .btn-fake {{
+            display: block; width: 100%; padding: 12px; margin: 5px 0;
+            border-radius: 15px; font-weight: 700; text-align: center;
+            font-size: 18px; cursor: default; border: 2px solid transparent;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }}
+        
+        .btn-correct-visual {{
+            background-color: #D4EDDA !important; color: #155724 !important;
+            border-color: #C3E6CB !important;
+        }}
+        
+        .btn-wrong-visual {{
+            background-color: #F8D7DA !important; color: #721C24 !important;
+            border-color: #F5C6CB !important;
+            opacity: 0.9;
+        }}
+        
+        .btn-neutral-visual {{
+            background-color: #f0f2f6 !important; color: #999 !important;
+            border-color: #eee !important;
+            opacity: 0.6;
+        }}
+
         </style>
         """, unsafe_allow_html=True)
