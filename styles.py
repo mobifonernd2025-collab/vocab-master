@@ -47,32 +47,20 @@ def apply_css(theme):
             margin: 0 !important; font-weight: 800 !important; line-height: 1.2 !important;
         }}
 
+        /* --- RESULT BOX (ĐÃ SỬA CỐ ĐỊNH CHIỀU CAO) --- */
         .result-box {{
             min-height: 60px; 
             display: flex; 
             align-items: center; 
             justify-content: center;
-            
-            padding: 5px 15px; 
-            border-radius: 12px; 
-            font-weight: 700; 
-            font-size: 1.1rem; 
-            text-align: center; 
-            margin-bottom: 10px;
-            transition: all 0.3s ease; /* Hiệu ứng chuyển mượt */
+            padding: 5px 15px; border-radius: 12px; font-weight: 700; font-size: 1.1rem; text-align: center; margin-bottom: 10px;
+            transition: all 0.3s ease;
         }}
-        .result-success {{ background-color: #D1E7DD; color: #0f5132; border: 1px solid #badbcc; animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }}
-        .result-error {{ background-color: #F8D7DA; color: #842029; border: 1px solid #f5c2c7; animation: shake 0.3s ease-in-out; }}
+        .result-success {{ background-color: #D1E7DD; color: #0f5132; border: 1px solid #badbcc; animation: pop 0.4s; }}
+        .result-error {{ background-color: #F8D7DA; color: #842029; border: 1px solid #f5c2c7; animation: shake 0.3s; }}
+        .result-hidden {{ background-color: transparent; color: transparent; border: 1px solid transparent; box-shadow: none; user-select: none; }}
 
-        .result-hidden {{
-            background-color: transparent; 
-            color: transparent; 
-            border: 1px solid transparent; 
-            box-shadow: none;
-            user-select: none; /* Không cho bôi đen */
-        }}
-
-        /* --- NÚT BẤM CHÍNH (Ở MÀN HÌNH CHÍNH) --- */
+        /* --- NÚT BẤM CHÍNH --- */
         div.stButton > button {{ 
             min-height: 3.2em !important; 
             border-radius: 15px !important; 
@@ -88,23 +76,14 @@ def apply_css(theme):
             animation: btnSlideUp 0.4s ease-out backwards;
         }}
         
-        div.stButton > button p {{
-            font-size: 22px !important; line-height: 1.1 !important; margin: 0 !important;
-        }}
+        div.stButton > button p {{ font-size: 22px !important; line-height: 1.1 !important; margin: 0 !important; }}
 
-        /* --- [FIX MỚI] NÚT BẤM TRONG SIDEBAR (NHỎ LẠI) --- */
+        /* --- NÚT SIDEBAR --- */
         section[data-testid="stSidebar"] div.stButton > button {{
-            min-height: auto !important; 
-            height: auto !important;     
-            padding: 0.5em 1em !important; 
-            font-size: 16px !important;    
-            margin-top: 10px !important;
+            min-height: auto !important; height: auto !important; padding: 0.5em 1em !important; 
+            font-size: 16px !important; margin-top: 10px !important;
         }}
-        
-        section[data-testid="stSidebar"] div.stButton > button p {{
-            font-size: 16px !important;
-            line-height: 1.5 !important;
-        }}
+        section[data-testid="stSidebar"] div.stButton > button p {{ font-size: 16px !important; line-height: 1.5 !important; }}
 
         @media (hover: hover) {{
             div.stButton > button:hover {{ 
@@ -122,41 +101,34 @@ def apply_css(theme):
             }}
         }}
 
-        /* --- THANH TIẾN ĐỘ CẦU VỒNG (GRADIENT & SHIMMER) --- */
+        /* --- THANH TIẾN ĐỘ CẦU VỒNG (SUPER RAINBOW - ĐÃ FIX NGOẶC KÉP) --- */
         @keyframes rainbow-move {{
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+            0% {{ background-position: 0% 50%; }}
+            50% {{ background-position: 100% 50%; }}
+            100% {{ background-position: 0% 50%; }}
         }}
 
-        /* 2. Tác động sâu vào cấu trúc HTML của Streamlit */
         div[data-testid="stProgress"] > div > div > div > div {{
-            /* Dải màu cầu vồng rực rỡ */
-            background: linear-gradient(
-                90deg, 
-                #FF0000, #FF7F00, #FFFF00, #00FF00, #0000FF, #4B0082, #9400D3, #FF0000
-            ) !important;
-            
-            /* Kích thước nền lớn để có chỗ cho animation chạy */
+            background: linear-gradient(90deg, #FF0000, #FF7F00, #FFFF00, #00FF00, #0000FF, #4B0082, #9400D3, #FF0000) !important;
             background-size: 400% 400% !important;
-            
-            /* Bo tròn và hiệu ứng chuyển động */
             border-radius: 10px !important;
             animation: rainbow-move 4s linear infinite !important;
-            
-            /* [MỚI] Hiệu ứng phát sáng (Glow) */
-            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5), 
-                        0 0 20px rgba(0, 255, 255, 0.3) !important;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5), 0 0 20px rgba(0, 255, 255, 0.3) !important;
         }}
         
-        /* Làm nền của thanh progress mờ đi để thanh màu nổi bật hơn */
         div[data-testid="stProgress"] {{
             background-color: rgba(0,0,0,0.05) !important;
             border-radius: 10px !important;
-            padding: 2px !important; /* Tạo viền nhỏ */
+            padding: 2px !important;
         }}
+        
+        .combo-text {{ text-align: center; font-size: 1.1em; font-weight: 800; color: #FF4500; margin-bottom: 5px; animation: pop 0.5s infinite alternate; }}
+        .author-text {{ text-align: center; color: {theme['sub_text']}; font-size: 0.85em; margin-top: 15px; opacity: 0.8; font-style: italic; }}
+        
+        p, label {{ color: {theme['text']} !important; margin-bottom: 0px !important; }}
+        .stCaption {{ color: {theme['sub_text']} !important; font-size: 0.95em !important; font-weight: 600; }}
 
-        /* --- [MỚI] CSS CHO HIỆU ỨNG ĐÁP ÁN (NẰM TRONG TAG STYLE) --- */
+        /* --- HIỆU ỨNG ĐÁP ÁN (BTN FAKE) --- */
         .btn-fake {{
             display: block; width: 100%; padding: 12px; margin: 5px 0;
             border-radius: 15px; font-weight: 700; text-align: center;
@@ -164,23 +136,9 @@ def apply_css(theme):
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
             transition: all 0.3s ease;
         }}
-        
-        .btn-correct-visual {{
-            background-color: #D4EDDA !important; color: #155724 !important;
-            border-color: #C3E6CB !important;
-        }}
-        
-        .btn-wrong-visual {{
-            background-color: #F8D7DA !important; color: #721C24 !important;
-            border-color: #F5C6CB !important;
-            opacity: 0.9;
-        }}
-        
-        .btn-neutral-visual {{
-            background-color: #f0f2f6 !important; color: #999 !important;
-            border-color: #eee !important;
-            opacity: 0.6;
-        }}
+        .btn-correct-visual {{ background-color: #D4EDDA !important; color: #155724 !important; border-color: #C3E6CB !important; }}
+        .btn-wrong-visual {{ background-color: #F8D7DA !important; color: #721C24 !important; border-color: #F5C6CB !important; opacity: 0.9; }}
+        .btn-neutral-visual {{ background-color: #f0f2f6 !important; color: #999 !important; border-color: #eee !important; opacity: 0.6; }}
 
         </style>
         """, unsafe_allow_html=True)
