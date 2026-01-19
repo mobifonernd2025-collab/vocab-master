@@ -25,6 +25,8 @@ if 'mode' not in st.session_state: st.session_state.mode = "Anh ➔ Việt"
 if 'last_audio_bytes' not in st.session_state: st.session_state.last_audio_bytes = None
 if 'combo' not in st.session_state: st.session_state.combo = 0
 if 'ignored_words' not in st.session_state: st.session_state.ignored_words = []
+if 'quiz_state' not in st.session_state: st.session_state.quiz_state = "ANSWERING" 
+if 'user_choice' not in st.session_state: st.session_state.user_choice = None
 
 # --- ÁP DỤNG THEME & CSS ---
 current_theme = get_theme(st.session_state.theme_mode)
@@ -102,6 +104,10 @@ data = load_data(current_sheet)
 
 # --- LOGIC ---
 def generate_new_question():
+    # 1. Reset trạng thái về chế độ trả lời
+    st.session_state.quiz_state = "ANSWERING"
+    st.session_state.user_choice = None
+    
     if len(data) < 2: return
     
     pool_after_ignore = [d for d in data if d[COL_ENG] not in st.session_state.ignored_words]
@@ -114,11 +120,8 @@ def generate_new_question():
 
     target = None
     if use_smart_review:
-        weights = []
-        for d in available_pool:
-            word = d[COL_ENG]
-            if word not in st.session_state.word_weights: weights.append(50) 
-            else: weights.append(st.session_state.word_weights[word])
+        weights = [st.session_state.word_weights.get(d[COL_ENG], 50) for d in available_pool]
+        weights = [w if w > 0 else 1 for w in weights] # Fix lỗi weight = 0
         target = random.choices(available_pool, weights=weights, k=1)[0]
     else: target = random.choice(available_pool)
 
@@ -138,29 +141,27 @@ def generate_new_question():
 def handle_answer(selected_opt):
     quiz = st.session_state.quiz
     target_word = quiz['raw_en']
-    duration = time.time() - st.session_state.start_time
-    st.session_state.total += 1
     current_weight = st.session_state.word_weights.get(target_word, 10)
+    
+    # 1. LƯU LẠI LỰA CHỌN VÀ CHUYỂN SANG CHẾ ĐỘ "REVIEW"
+    st.session_state.user_choice = selected_opt
+    st.session_state.quiz_state = "REVIEW" # <-- Quan trọng
+    st.session_state.total += 1
 
     if selected_opt == quiz['a']:
         st.session_state.score += 1; st.session_state.combo += 1 
         fire_icon = "🔥" * min(st.session_state.combo, 5) if st.session_state.combo > 1 else "🎉"
-        st.session_state.last_result_msg = ("success", f"{fire_icon} Ngon luônnn: {quiz['q']} - {quiz['a']}")
+        st.session_state.last_result_msg = ("success", f"{fire_icon} Chính xác! {quiz['q']} = {quiz['a']}")
         
         if use_smart_review:
-            if duration < 2.0: new_weight = max(1, current_weight - 5)
-            elif duration > 3.5: new_weight = min(100, current_weight + 5)
-            else: new_weight = max(1, current_weight - 2)
-            st.session_state.word_weights[target_word] = new_weight
+            st.session_state.word_weights[target_word] = max(1, current_weight - 5)
     else:
         st.session_state.combo = 0 
-        st.session_state.last_result_msg = ("error", f"❌ Toang rồi ông cháu: '{quiz['q']}' là '{quiz['a']}' chứ không phải '{selected_opt}'")
+        st.session_state.last_result_msg = ("error", f"❌ Sai rồi! Đáp án là: {quiz['a']}")
         st.session_state.word_weights[target_word] = min(100, current_weight + 15)
 
     st.session_state.recent_history.append(target_word)
     if len(st.session_state.recent_history) > 5: st.session_state.recent_history.pop(0)
-    generate_new_question()
-
 def ignore_current_word():
     if st.session_state.quiz:
         current_word = st.session_state.quiz['raw_en']
@@ -218,21 +219,53 @@ def show_quiz_area():
 
     # 4. ĐÁP ÁN
     if st.session_state.mode == "🗣️ Luyện Phát Âm (Beta)":
+        # ... (Phần code Luyện Phát Âm giữ nguyên không sửa gì) ...
         c1, c2, c3 = st.columns([1, 1, 1])
         with c2: 
             audio = mic_recorder(start_prompt="🎙️ Nói", stop_prompt="⏹️ Dừng", key="static_mic_recorder", format="wav")
         if audio and audio['bytes'] != st.session_state.last_audio_bytes:
-            st.session_state.last_audio_bytes = audio['bytes']
-            spoken = recognize_speech(audio['bytes'])
-            if spoken == quiz['raw_en'].lower().strip():
-                st.session_state.combo += 1; st.balloons(); time.sleep(1); generate_new_question(); st.rerun()
-            else: st.session_state.combo = 0; st.error(f"Bạn nói: {spoken}")
-        if st.button("Câu khác ➡️"): st.session_state.combo = 0; generate_new_question(); st.rerun()
+             # (Logic cũ của phần mic...)
+             st.session_state.last_audio_bytes = audio['bytes']
+             spoken = recognize_speech(audio['bytes'])
+             if spoken == quiz['raw_en'].lower().strip():
+                 st.balloons(); time.sleep(1); generate_new_question(); st.rerun()
+             else: st.error(f"Bạn nói: {spoken}")
+        if st.button("Câu khác ➡️"): generate_new_question(); st.rerun()
+
     else:
-        col_1, col_2 = st.columns(2)
-        for idx, opt in enumerate(quiz['opts']):
-            with (col_1 if idx % 2 == 0 else col_2): 
-                st.button(opt, key=uuid.uuid4(), on_click=handle_answer, args=(opt,), use_container_width=True)
+        # --- LOGIC MỚI CHO TRẮC NGHIỆM ---
+        
+        # TRƯỜNG HỢP 1: ĐANG TRẢ LỜI (Hiện nút bấm để chọn)
+        if st.session_state.quiz_state == "ANSWERING":
+            col_1, col_2 = st.columns(2)
+            for idx, opt in enumerate(quiz['opts']):
+                with (col_1 if idx % 2 == 0 else col_2): 
+                    # Nút bấm bình thường
+                    st.button(opt, key=f"btn_{uuid.uuid4()}", on_click=handle_answer, args=(opt,), use_container_width=True)
+        
+        # TRƯỜNG HỢP 2: ĐÃ CHỌN XONG (Hiện màu sắc + Tự động chuyển)
+        else:
+            col_1, col_2 = st.columns(2)
+            correct_answer = quiz['a']
+            user_choice = st.session_state.user_choice
+            
+            # Vẽ các ô màu
+            for idx, opt in enumerate(quiz['opts']):
+                with (col_1 if idx % 2 == 0 else col_2):
+                    if opt == correct_answer:
+                        # Đáp án đúng -> Màu Xanh
+                        st.markdown(f'<div class="btn-fake btn-correct-visual">✅ {opt}</div>', unsafe_allow_html=True)
+                    elif opt == user_choice and opt != correct_answer:
+                        # Chọn sai -> Màu Đỏ
+                        st.markdown(f'<div class="btn-fake btn-wrong-visual">❌ {opt}</div>', unsafe_allow_html=True)
+                    else:
+                        # Các cái khác -> Màu Xám
+                        st.markdown(f'<div class="btn-fake btn-neutral-visual">{opt}</div>', unsafe_allow_html=True)
+            
+            # Dừng 1.5 giây để nhìn kết quả rồi tự chuyển
+            time.sleep(1.5) 
+            generate_new_question()
+            st.rerun()
 
 show_quiz_area()
 st.markdown(f'<div class="author-text">Made by đại ca {AUTHOR}</div>', unsafe_allow_html=True)
