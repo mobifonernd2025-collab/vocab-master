@@ -123,14 +123,14 @@ def apply_css(theme):
         }}
 
         /* --- THANH TIẾN ĐỘ CẦU VỒNG (GRADIENT & SHIMMER) --- */
-        @keyframes rainbow-move {
+        @keyframes rainbow-move {{
             0% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
-        }
+        }}
 
         /* 2. Tác động sâu vào cấu trúc HTML của Streamlit */
-        div[data-testid="stProgress"] > div > div > div > div {
+        div[data-testid="stProgress"] > div > div > div > div {{
             /* Dải màu cầu vồng rực rỡ */
             background: linear-gradient(
                 90deg, 
@@ -147,7 +147,7 @@ def apply_css(theme):
             /* [MỚI] Hiệu ứng phát sáng (Glow) */
             box-shadow: 0 0 10px rgba(255, 255, 255, 0.5), 
                         0 0 20px rgba(0, 255, 255, 0.3) !important;
-        }
+        }}
         
         /* Làm nền của thanh progress mờ đi để thanh màu nổi bật hơn */
         div[data-testid="stProgress"] {{
