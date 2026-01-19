@@ -265,7 +265,7 @@ def show_quiz_area():
                         # Các cái khác -> Màu Xám
                         st.markdown(f'<div class="btn-fake btn-neutral-visual">{opt}</div>', unsafe_allow_html=True)
     
-            time.sleep(2) 
+            time.sleep(1.5) 
             generate_new_question()
             st.rerun()
 
