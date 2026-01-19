@@ -48,11 +48,29 @@ def apply_css(theme):
         }}
 
         .result-box {{
-            padding: 15px; border-radius: 12px; font-weight: 700; font-size: 1.1rem; text-align: center; margin-bottom: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            min-height: 60px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            
+            padding: 5px 15px; 
+            border-radius: 12px; 
+            font-weight: 700; 
+            font-size: 1.1rem; 
+            text-align: center; 
+            margin-bottom: 10px;
+            transition: all 0.3s ease; /* Hiệu ứng chuyển mượt */
         }}
         .result-success {{ background-color: #D1E7DD; color: #0f5132; border: 1px solid #badbcc; animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }}
         .result-error {{ background-color: #F8D7DA; color: #842029; border: 1px solid #f5c2c7; animation: shake 0.3s ease-in-out; }}
+
+        .result-hidden {{
+            background-color: transparent; 
+            color: transparent; 
+            border: 1px solid transparent; 
+            box-shadow: none;
+            user-select: none; /* Không cho bôi đen */
+        }}
 
         /* --- NÚT BẤM CHÍNH (Ở MÀN HÌNH CHÍNH) --- */
         div.stButton > button {{ 
