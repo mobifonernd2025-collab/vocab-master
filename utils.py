@@ -111,7 +111,7 @@ def add_vocabulary(sheet_name, en_word, vi_word):
         ws = spreadsheet.worksheet(sheet_name)
         
         # Thêm dòng mới vào cuối
-        ws.append_row([en_word, vi_word])
+        ws.append_row([en_word, "", vi_word,"",""])
         return True
     except Exception as e:
         print(f"Lỗi thêm từ: {e}")
@@ -134,7 +134,7 @@ def create_new_topic(new_topic_name):
         new_ws = spreadsheet.add_worksheet(title=new_topic_name, rows=100, cols=5)
         
         # QUAN TRỌNG: Thêm header chuẩn để App đọc được
-        new_ws.append_row([COL_ENG, COL_VIE]) 
+        new_ws.append_row(["Từ vựng", "Loại từ", "Nghĩa", "Cụm từ hay gặp", "Ghi chú"]) 
         return True
     except Exception as e:
         print(f"Lỗi tạo sheet: {e}")
