@@ -7,7 +7,7 @@ def apply_css(theme):
         /* --- 1. IMPORT FONT (GIỮ NGUYÊN) --- */
         @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
 
-        /* --- 2. CẤU HÌNH BIẾN (GIỮ NGUYÊN + THÊM MARGIN ĐỂ TÁCH NÚT) --- */
+        /* --- 2. CẤU HÌNH BIẾN (CHỈNH SỬA KHOẢNG CÁCH CHO CHUẨN) --- */
         :root {{
             --btn-height: 52px;       /* Chiều cao cứng */
             --btn-radius: 12px;       /* Bo góc */
@@ -15,14 +15,14 @@ def apply_css(theme):
             --btn-font-weight: 600;   /* Độ đậm đồng nhất */
             --btn-border-width: 2px;
             
-            /* [MỚI] Thêm khoảng cách an toàn trên dưới để chống dính */
-            --btn-spacing: 8px 0px;   
+            /* [ĐÃ CHỈNH] Margin vừa đủ (6px trên + 6px dưới = 12px cách nhau) */
+            --btn-spacing: 6px 0px;   
         }}
 
         /* --- 3. ANIMATION (GIỮ NGUYÊN) --- */
         @keyframes quickFadeZoom {{ 0% {{ opacity: 0; }} 100% {{ opacity: 1; }} }}
 
-        /* ĐÚNG: Chỉ đổi màu (Không phóng to) */
+        /* ĐÚNG: Chỉ đổi màu */
         @keyframes turnGreen {{
             from {{ background-color: {theme['btn_bg']}; color: {theme['text']}; border-color: {theme['border']}; }}
             to {{ background-color: #D4EDDA; color: #155724; border-color: #C3E6CB; }}
@@ -37,16 +37,18 @@ def apply_css(theme):
             100% {{ background-color: #F8D7DA; color: #721C24; border-color: #F5C6CB; transform: translateX(0); }}
         }}
 
-        /* --- 4. CÀI ĐẶT CHUNG (GIỮ NGUYÊN) --- */
+        /* --- 4. CÀI ĐẶT CHUNG --- */
         html, body, [class*="css"], button, input, textarea, p, h1, h2, h3 {{
             font-family: 'Nunito', sans-serif !important;
         }}
         .stApp {{ background-color: {theme['bg']}; transition: background-color 0.5s ease; }}
         
-        /* Giữ khoảng cách giữa các khối vertical của Streamlit */
-        div[data-testid="stVerticalBlock"] {{ gap: 0.5rem !important; }}
+        /* [QUAN TRỌNG NHẤT] TẮT GAP MẶC ĐỊNH CỦA STREAMLIT */
+        /* Điều này giúp Nút Thật và Nút Giả có khoảng cách giống hệt nhau */
+        div[data-testid="stVerticalBlock"] {{ gap: 0rem !important; }}
+        div[data-testid="column"] > div > div > div > div {{ gap: 0rem !important; }}
 
-        /* --- 5. NÚT BẤM THẬT (st.button) - ĐÃ THÊM MARGIN --- */
+        /* --- 5. NÚT BẤM THẬT (st.button) --- */
         div.stButton > button {{ 
             /* Kích thước & Font (Giữ nguyên) */
             height: var(--btn-height) !important;
@@ -64,7 +66,7 @@ def apply_css(theme):
             width: 100%;
             padding: 0px !important;
             
-            /* [QUAN TRỌNG] Thêm Margin để đẩy các nút ra xa nhau */
+            /* Margin quản lý khoảng cách */
             margin: var(--btn-spacing) !important;
             
             /* Flexbox căn giữa */
@@ -121,7 +123,7 @@ def apply_css(theme):
             
             width: 100%;
             
-            /* [QUAN TRỌNG] Margin y hệt nút thật để vị trí trùng khớp */
+            /* Margin y hệt nút thật */
             margin: var(--btn-spacing) !important;
             
             /* Flexbox căn giữa */
