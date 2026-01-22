@@ -4,22 +4,25 @@ import streamlit as st
 def apply_css(theme):
     st.markdown(f"""
         <style>
-        /* --- 1. IMPORT FONT --- */
+        /* --- 1. IMPORT FONT (GIỮ NGUYÊN) --- */
         @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
 
-        /* --- 2. CẤU HÌNH "KỶ LUẬT THÉP" (Áp dụng cho cả 2 loại nút) --- */
+        /* --- 2. CẤU HÌNH BIẾN (GIỮ NGUYÊN + THÊM MARGIN ĐỂ TÁCH NÚT) --- */
         :root {{
-            --btn-height: 52px;       /* Chiều cao cố định */
+            --btn-height: 52px;       /* Chiều cao cứng */
             --btn-radius: 12px;       /* Bo góc */
             --btn-font-size: 18px;    /* Cỡ chữ */
-            --btn-font-weight: 600;   /* Độ đậm: 600 là Semi-Bold (Không quá đậm, không quá mảnh) */
+            --btn-font-weight: 600;   /* Độ đậm đồng nhất */
             --btn-border-width: 2px;
+            
+            /* [MỚI] Thêm khoảng cách an toàn trên dưới để chống dính */
+            --btn-spacing: 8px 0px;   
         }}
 
-        /* --- 3. ANIMATION (KHÔNG SCALE) --- */
+        /* --- 3. ANIMATION (GIỮ NGUYÊN) --- */
         @keyframes quickFadeZoom {{ 0% {{ opacity: 0; }} 100% {{ opacity: 1; }} }}
 
-        /* ĐÚNG: Chỉ đổi màu */
+        /* ĐÚNG: Chỉ đổi màu (Không phóng to) */
         @keyframes turnGreen {{
             from {{ background-color: {theme['btn_bg']}; color: {theme['text']}; border-color: {theme['border']}; }}
             to {{ background-color: #D4EDDA; color: #155724; border-color: #C3E6CB; }}
@@ -34,33 +37,37 @@ def apply_css(theme):
             100% {{ background-color: #F8D7DA; color: #721C24; border-color: #F5C6CB; transform: translateX(0); }}
         }}
 
-        /* --- 4. CÀI ĐẶT CHUNG --- */
+        /* --- 4. CÀI ĐẶT CHUNG (GIỮ NGUYÊN) --- */
         html, body, [class*="css"], button, input, textarea, p, h1, h2, h3 {{
             font-family: 'Nunito', sans-serif !important;
         }}
         .stApp {{ background-color: {theme['bg']}; transition: background-color 0.5s ease; }}
+        
+        /* Giữ khoảng cách giữa các khối vertical của Streamlit */
         div[data-testid="stVerticalBlock"] {{ gap: 0.5rem !important; }}
 
-        /* --- 5. NÚT BẤM THẬT (st.button) --- */
+        /* --- 5. NÚT BẤM THẬT (st.button) - ĐÃ THÊM MARGIN --- */
         div.stButton > button {{ 
-            /* Ép kích thước & Font chữ theo biến chung */
+            /* Kích thước & Font (Giữ nguyên) */
             height: var(--btn-height) !important;
             min-height: var(--btn-height) !important;
             max-height: var(--btn-height) !important;
             border-radius: var(--btn-radius) !important;
             
             font-size: var(--btn-font-size) !important;
-            font-weight: var(--btn-font-weight) !important; /* Đồng bộ độ đậm */
+            font-weight: var(--btn-font-weight) !important;
             
             background-color: {theme['btn_bg']}; 
             border: var(--btn-border-width) solid {theme['border']} !important; 
             color: {theme['btn_text']} !important; 
             
             width: 100%;
-            padding: 0px !important; /* Bỏ padding, dùng Flex để căn giữa */
-            margin-top: 5px !important; /* Khớp margin */
+            padding: 0px !important;
             
-            /* Flexbox căn giữa tuyệt đối */
+            /* [QUAN TRỌNG] Thêm Margin để đẩy các nút ra xa nhau */
+            margin: var(--btn-spacing) !important;
+            
+            /* Flexbox căn giữa */
             display: flex !important; align-items: center !important; justify-content: center !important;
             
             box-shadow: 0 2px 0px rgba(0,0,0,0.05);
@@ -74,8 +81,7 @@ def apply_css(theme):
             margin: 0 !important; padding: 0 !important;
         }}
 
-        /* --- 6. XỬ LÝ SỰ KIỆN (HOVER/ACTIVE) --- */
-        /* Máy tính */
+        /* --- 6. XỬ LÝ SỰ KIỆN (HOVER/ACTIVE) - (GIỮ NGUYÊN FIX ĐIỆN THOẠI) --- */
         @media (hover: hover) {{
             div.stButton > button:hover {{ 
                 background-color: {theme['btn_hover']} !important; 
@@ -84,7 +90,6 @@ def apply_css(theme):
             }}
         }}
 
-        /* Điện thoại (Fix lỗi dính màu) */
         @media (hover: none) {{
             div.stButton > button:hover, div.stButton > button:focus {{ 
                 background-color: {theme['btn_bg']} !important; 
@@ -99,26 +104,27 @@ def apply_css(theme):
             }}
         }}
 
-        /* --- 7. NÚT GIẢ (BTN FAKE) - ÉP GIỐNG 100% --- */
+        /* --- 7. NÚT GIẢ (BTN FAKE) - KHỚP 100% --- */
         .btn-fake {{
-            /* Kích thước y hệt */
+            /* Kích thước */
             height: var(--btn-height) !important;
             min-height: var(--btn-height) !important;
             border-radius: var(--btn-radius) !important;
             
-            /* Font chữ y hệt */
+            /* Font chữ */
             font-size: var(--btn-font-size);
-            font-weight: var(--btn-font-weight); /* Đồng bộ độ đậm */
+            font-weight: var(--btn-font-weight);
             
             background-color: {theme['btn_bg']};
             color: {theme['text']};
-            border: var(--btn-border-width) solid {theme['border']}; /* Viền y hệt */
+            border: var(--btn-border-width) solid {theme['border']};
             
             width: 100%;
-            margin-top: 5px; /* Khớp margin */
-            margin-bottom: 0px;
             
-            /* Flexbox căn giữa y hệt */
+            /* [QUAN TRỌNG] Margin y hệt nút thật để vị trí trùng khớp */
+            margin: var(--btn-spacing) !important;
+            
+            /* Flexbox căn giữa */
             display: flex; align-items: center; justify-content: center;
             
             cursor: default;
@@ -126,14 +132,14 @@ def apply_css(theme):
             box-sizing: border-box !important;
         }}
         
-        /* Animation */
+        /* Animation giữ nguyên */
         .btn-correct-visual {{ animation: turnGreen 0.3s ease forwards !important; }}
         .btn-wrong-visual {{ animation: turnRed 0.4s ease forwards !important; opacity: 0.9; }}
         .btn-neutral-visual {{ opacity: 0.5; filter: grayscale(100%); }}
 
-        /* --- 8. CÁC THÀNH PHẦN KHÁC (GIỮ NGUYÊN) --- */
+        /* --- 8. CÁC THÀNH PHẦN KHÁC (GIỮ NGUYÊN TOÀN BỘ) --- */
         section[data-testid="stSidebar"] div.stButton > button {{
-            height: auto !important; min-height: auto !important; padding: 5px 15px !important; font-size: 16px !important;
+            height: auto !important; min-height: auto !important; padding: 5px 15px !important; font-size: 16px !important; margin: 5px 0 !important;
         }}
 
         .main-title {{ font-size: 26px !important; font-weight: 800; color: {theme['text']}; text-align: center; text-transform: uppercase; }}
@@ -154,7 +160,7 @@ def apply_css(theme):
         .result-error {{ background-color: #F8D7DA; color: #842029; }}
         .result-hidden {{ opacity: 0; }}
 
-        /* Cầu vồng */
+        /* Cầu vồng giữ nguyên */
         @keyframes rainbow-move {{ 0% {{ background-position: 0% 50%; }} 100% {{ background-position: 100% 50%; }} }}
         div[data-testid="stProgress"] > div > div > div > div {{
             background: linear-gradient(90deg, #FF0000, #FFFF00, #00FF00, #0000FF, #FF0000) !important;
