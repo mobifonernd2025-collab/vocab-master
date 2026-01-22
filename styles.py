@@ -9,35 +9,34 @@ def apply_css(theme):
 
         /* --- 2. CÁC ANIMATION (HIỆU ỨNG CHUYỂN ĐỘNG) --- */
         
-        /* Hiệu ứng zoom nhẹ khi hiện thẻ */
+        /* Hiệu ứng zoom nhẹ khi hiện thẻ (Giữ nguyên) */
         @keyframes quickFadeZoom {{
             0% {{ opacity: 0; transform: scale(0.96) translateY(5px); }}
             100% {{ opacity: 1; transform: scale(1) translateY(0); }}
         }}
 
-        /* [MỚI] Hiệu ứng BIẾN HÌNH sang ĐÚNG (Trắng -> Xanh mượt mà) */
+        /* [ĐÃ SỬA] Hiệu ứng ĐÚNG: CHỈ ĐỔI MÀU (Bỏ phóng to để không bị giật) */
         @keyframes turnGreen {{
             0% {{ 
                 background-color: {theme['btn_bg']}; 
                 color: {theme['text']}; 
                 border-color: {theme['border']};
-                transform: scale(1);
             }}
-            50% {{ transform: scale(1.03); }} /* Phình to ra một chút */
+            /* Đã xóa đoạn scale(1.03) để nút đứng im */
             100% {{ 
                 background-color: #D4EDDA; 
                 color: #155724; 
                 border-color: #C3E6CB;
-                transform: scale(1);
             }}
         }}
 
-        /* [MỚI] Hiệu ứng BIẾN HÌNH sang SAI (Trắng -> Đỏ + Rung lắc) */
+        /* [ĐÃ SỬA] Hiệu ứng SAI: ĐỔI MÀU + RUNG LẮC (Shake) */
         @keyframes turnRed {{
             0% {{ 
                 background-color: {theme['btn_bg']}; 
                 color: {theme['text']};
                 border-color: {theme['border']};
+                transform: translateX(0);
             }}
             25% {{ transform: translateX(-5px); }} /* Rung sang trái */
             50% {{ transform: translateX(5px); }}  /* Rung sang phải */
@@ -77,7 +76,7 @@ def apply_css(theme):
             margin: 0 !important; font-weight: 800 !important; line-height: 1.2 !important;
         }}
 
-        /* Hộp kết quả (Cố định chiều cao để không bị nhảy) */
+        /* Hộp kết quả */
         .result-box {{
             min-height: 60px; display: flex; align-items: center; justify-content: center;
             padding: 5px 15px; border-radius: 12px; font-weight: 700; font-size: 1.1rem; text-align: center; margin-bottom: 10px;
@@ -87,7 +86,7 @@ def apply_css(theme):
         .result-error {{ background-color: #F8D7DA; color: #842029; border: 1px solid #f5c2c7; }}
         .result-hidden {{ background-color: transparent; color: transparent; border: 1px solid transparent; user-select: none; }}
 
-        /* --- 4. NÚT BẤM (ĐÃ SỬA: TÁCH RIÊNG ĐIỆN THOẠI VÀ MÁY TÍNH) --- */
+        /* --- 4. NÚT BẤM THẬT (Đã fix lỗi điện thoại) --- */
         div.stButton > button {{ 
             min-height: 3.2em !important; 
             border-radius: 15px !important; 
@@ -98,16 +97,17 @@ def apply_css(theme):
             width: 100%; transition: all 0.2s ease;
             box-shadow: 0 2px 0px rgba(0,0,0,0.05);
             outline: none !important;
+            padding: 10px 5px !important; /* Căn chỉnh padding */
         }}
         
-        div.stButton > button p {{ font-size: 20px !important; margin: 0 !important; }}
+        div.stButton > button p {{ font-size: 20px !important; margin: 0 !important; line-height: 1.2 !important; }}
 
         /* Fix nút Sidebar nhỏ lại */
         section[data-testid="stSidebar"] div.stButton > button {{
             min-height: auto !important; padding: 0.5em 1em !important; font-size: 16px !important; margin-top: 10px !important;
         }}
 
-        /* --- [MỚI] PHẦN 1: DÀNH CHO MÁY TÍNH (CÓ CHUỘT) --- */
+        /* PHẦN 1: MÁY TÍNH (CÓ CHUỘT) */
         @media (hover: hover) {{
             div.stButton > button:hover {{ 
                 background-color: {theme['btn_hover']} !important; 
@@ -117,9 +117,9 @@ def apply_css(theme):
             }}
         }}
 
-        /* --- [MỚI] PHẦN 2: DÀNH CHO ĐIỆN THOẠI (FIX LỖI DÍNH MÀU) --- */
+        /* PHẦN 2: ĐIỆN THOẠI (FIX DÍNH MÀU) */
         @media (hover: none) {{
-            /* Khi vừa bấm xong (Focus) hoặc lướt qua -> Trả về màu gốc ngay */
+            /* Trả về màu gốc ngay khi buông tay */
             div.stButton > button:hover, 
             div.stButton > button:focus {{ 
                 background-color: {theme['btn_bg']} !important; 
@@ -129,7 +129,7 @@ def apply_css(theme):
                 transform: none !important;
             }}
             
-            /* Chỉ đổi màu khi NGÓN TAY ĐANG CHẠM (Active) */
+            /* Chỉ đổi màu khi đang chạm */
             div.stButton > button:active {{ 
                 background-color: {theme['btn_hover']} !important; 
                 transform: scale(0.96); 
@@ -137,7 +137,7 @@ def apply_css(theme):
             }}
         }}
 
-        /* --- 5. THANH TIẾN ĐỘ CẦU VỒNG (SUPER RAINBOW) --- */
+        /* --- 5. THANH TIẾN ĐỘ CẦU VỒNG --- */
         @keyframes rainbow-move {{ 0% {{ background-position: 0% 50%; }} 50% {{ background-position: 100% 50%; }} 100% {{ background-position: 0% 50%; }} }}
         div[data-testid="stProgress"] > div > div > div > div {{
             background: linear-gradient(90deg, #FF0000, #FF7F00, #FFFF00, #00FF00, #0000FF, #4B0082, #9400D3, #FF0000) !important;
@@ -147,35 +147,40 @@ def apply_css(theme):
         }}
         div[data-testid="stProgress"] {{ background-color: rgba(0,0,0,0.05) !important; border-radius: 10px !important; padding: 2px !important; }}
         
-        /* --- 6. [QUAN TRỌNG] CLASS NÚT GIẢ LẬP HIỆU ỨNG (BTN FAKE) --- */
+        /* --- 6. [QUAN TRỌNG] CLASS NÚT GIẢ (BTN FAKE) --- */
+        /* Đã chỉnh lại CSS để khớp 100% với nút thật (không bị to hơn) */
         .btn-fake {{
-            display: block; width: 100%; padding: 12px; margin: 5px 0;
+            display: flex; align-items: center; justify-content: center; /* Căn giữa text khi không có icon */
+            width: 100%; 
+            min-height: 3.2em !important; /* Chiều cao khớp nút thật */
+            padding: 10px 5px; margin: 5px 0;
             border-radius: 15px; font-weight: 700; text-align: center;
-            font-size: 20px; /* Khớp size với nút thật */
+            font-size: 20px; line-height: 1.2;
             cursor: default; 
             border: 2px solid transparent;
             box-shadow: 0 2px 0px rgba(0,0,0,0.05);
-            /* Bắt đầu với màu giống hệt nút thường */
+            /* Màu gốc */
             background-color: {theme['btn_bg']};
             color: {theme['text']};
             border-color: {theme['border']};
         }}
         
-        /* KHI ĐÚNG: Chạy animation turnGreen trong 0.6 giây */
+        /* KHI ĐÚNG: Chạy animation đổi màu nhẹ (Không scale) */
         .btn-correct-visual {{
-            animation: turnGreen 0.6s ease forwards !important; 
+            animation: turnGreen 0.4s ease forwards !important; 
         }}
         
-        /* KHI SAI: Chạy animation turnRed trong 0.6 giây */
+        /* KHI SAI: Chạy animation đổi màu + RUNG LẮC */
         .btn-wrong-visual {{
-            animation: turnRed 0.6s ease forwards !important;
+            animation: turnRed 0.4s ease forwards !important;
+            opacity: 0.9;
         }}
         
-        /* CÁC NÚT KHÁC: Mờ dần đi */
+        /* CÁC NÚT KHÁC */
         .btn-neutral-visual {{
             opacity: 0.5;
             transition: opacity 0.5s ease;
-            filter: grayscale(100%); /* Làm xám màu đi */
+            filter: grayscale(100%);
         }}
 
         /* Text phụ */
