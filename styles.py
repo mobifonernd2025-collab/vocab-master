@@ -87,7 +87,7 @@ def apply_css(theme):
         .result-error {{ background-color: #F8D7DA; color: #842029; border: 1px solid #f5c2c7; }}
         .result-hidden {{ background-color: transparent; color: transparent; border: 1px solid transparent; user-select: none; }}
 
-        /* --- 4. NÚT BẤM (BUTTON GỐC CỦA STREAMLIT) --- */
+        /* --- 4. NÚT BẤM (ĐÃ SỬA: TÁCH RIÊNG ĐIỆN THOẠI VÀ MÁY TÍNH) --- */
         div.stButton > button {{ 
             min-height: 3.2em !important; 
             border-radius: 15px !important; 
@@ -97,13 +97,44 @@ def apply_css(theme):
             color: {theme['btn_text']} !important; 
             width: 100%; transition: all 0.2s ease;
             box-shadow: 0 2px 0px rgba(0,0,0,0.05);
+            outline: none !important;
         }}
-        div.stButton > button:hover {{ transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.1); }}
+        
         div.stButton > button p {{ font-size: 20px !important; margin: 0 !important; }}
 
         /* Fix nút Sidebar nhỏ lại */
         section[data-testid="stSidebar"] div.stButton > button {{
             min-height: auto !important; padding: 0.5em 1em !important; font-size: 16px !important; margin-top: 10px !important;
+        }}
+
+        /* --- [MỚI] PHẦN 1: DÀNH CHO MÁY TÍNH (CÓ CHUỘT) --- */
+        @media (hover: hover) {{
+            div.stButton > button:hover {{ 
+                background-color: {theme['btn_hover']} !important; 
+                color: {theme['text']} !important;
+                transform: translateY(-2px); 
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+            }}
+        }}
+
+        /* --- [MỚI] PHẦN 2: DÀNH CHO ĐIỆN THOẠI (FIX LỖI DÍNH MÀU) --- */
+        @media (hover: none) {{
+            /* Khi vừa bấm xong (Focus) hoặc lướt qua -> Trả về màu gốc ngay */
+            div.stButton > button:hover, 
+            div.stButton > button:focus {{ 
+                background-color: {theme['btn_bg']} !important; 
+                color: {theme['btn_text']} !important; 
+                border-color: {theme['border']} !important; 
+                box-shadow: 0 2px 0px rgba(0,0,0,0.05) !important;
+                transform: none !important;
+            }}
+            
+            /* Chỉ đổi màu khi NGÓN TAY ĐANG CHẠM (Active) */
+            div.stButton > button:active {{ 
+                background-color: {theme['btn_hover']} !important; 
+                transform: scale(0.96); 
+                transition: transform 0.1s;
+            }}
         }}
 
         /* --- 5. THANH TIẾN ĐỘ CẦU VỒNG (SUPER RAINBOW) --- */
