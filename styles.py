@@ -7,176 +7,165 @@ def apply_css(theme):
         /* --- 1. IMPORT FONT --- */
         @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
 
-        /* --- 2. ANIMATION (ĐÃ XÓA MỌI HIỆU ỨNG PHÓNG TO) --- */
+        /* --- 2. CÀI ĐẶT BIẾN KÍCH THƯỚC CHUNG (CHÌA KHÓA CHỐNG GIẬT) --- */
+        :root {{
+            --btn-h: 56px;           /* Chiều cao cố định */
+            --btn-radius: 15px;      /* Bo tròn */
+            --btn-font: 20px;        /* Cỡ chữ */
+            --btn-padding: 0px 5px;  /* Khoảng cách lề */
+        }}
+
+        /* --- 3. ANIMATION --- */
         
-        /* Hiệu ứng zoom nhẹ khi hiện thẻ (Giữ nguyên) */
+        /* Hiệu ứng zoom nhẹ khi hiện thẻ */
         @keyframes quickFadeZoom {{
-            0% {{ opacity: 0; transform: scale(0.96) translateY(5px); }}
-            100% {{ opacity: 1; transform: scale(1) translateY(0); }}
+            0% {{ opacity: 0; }}
+            100% {{ opacity: 1; }}
         }}
 
-        /* [ĐÃ FIX] Hiệu ứng ĐÚNG: CHỈ ĐỔI MÀU (Tuyệt đối không scale) */
+        /* ĐÚNG: Chỉ đổi màu (Tuyệt đối không phóng to) */
         @keyframes turnGreen {{
-            from {{ 
-                background-color: {theme['btn_bg']}; 
-                color: {theme['text']}; 
-                border-color: {theme['border']};
-            }}
-            to {{ 
-                background-color: #D4EDDA; 
-                color: #155724; 
-                border-color: #C3E6CB;
-            }}
+            from {{ background-color: {theme['btn_bg']}; color: {theme['text']}; border-color: {theme['border']}; }}
+            to {{ background-color: #D4EDDA; color: #155724; border-color: #C3E6CB; }}
         }}
 
-        /* [ĐÃ FIX] Hiệu ứng SAI: RUNG LẮC (Giữ nguyên kích thước) */
+        /* SAI: Đổi màu + RUNG LẮC (Shake) */
         @keyframes turnRed {{
-            0% {{ background-color: {theme['btn_bg']}; color: {theme['text']}; border-color: {theme['border']}; transform: translateX(0); }}
+            0% {{ background-color: {theme['btn_bg']}; transform: translateX(0); }}
             25% {{ transform: translateX(-5px); }}
             50% {{ transform: translateX(5px); }} 
             75% {{ transform: translateX(-5px); }}
-            100% {{ 
-                background-color: #F8D7DA; 
-                color: #721C24; 
-                border-color: #F5C6CB;
-                transform: translateX(0);
-            }}
+            100% {{ background-color: #F8D7DA; color: #721C24; border-color: #F5C6CB; transform: translateX(0); }}
         }}
 
-        /* --- 3. GIAO DIỆN CHÍNH --- */
+        /* --- 4. GIAO DIỆN CHUNG --- */
         html, body, [class*="css"], button, input, textarea, p, h1, h2, h3 {{
             font-family: 'Nunito', sans-serif !important;
         }}
-
         .stApp {{ background-color: {theme['bg']}; transition: background-color 0.5s ease; }}
         div[data-testid="stVerticalBlock"] {{ gap: 0.5rem !important; }}
-        
-        .main-title {{ 
-            font-size: 26px !important; font-weight: 800 !important; color: {theme['text']} !important; 
-            text-align: center; margin-bottom: 0px; text-transform: uppercase; letter-spacing: 1px;
-        }}
-        
-        .main-card {{ 
-            background-color: {theme['card_bg']}; border-radius: 20px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.08); border-top: 5px solid {theme['border']}; 
-            padding: 1px 10px !important; text-align: center;
-            margin-bottom: 10px; margin-top: 5px;
-            animation: quickFadeZoom 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
-        }}
-        .main-card h1 {{ 
-            color: {theme['text']} !important; font-size: 2.5em !important; 
-            margin: 0 !important; font-weight: 800 !important; line-height: 1.2 !important;
-        }}
 
-        .result-box {{
-            min-height: 60px; display: flex; align-items: center; justify-content: center;
-            padding: 5px 15px; border-radius: 12px; font-weight: 700; font-size: 1.1rem; text-align: center; margin-bottom: 10px;
-            transition: all 0.3s ease;
-        }}
-        .result-success {{ background-color: #D1E7DD; color: #0f5132; border: 1px solid #badbcc; }}
-        .result-error {{ background-color: #F8D7DA; color: #842029; border: 1px solid #f5c2c7; }}
-        .result-hidden {{ background-color: transparent; color: transparent; border: 1px solid transparent; user-select: none; }}
-
-        /* --- 4. NÚT BẤM THẬT (st.button) --- */
+        /* --- 5. NÚT BẤM THẬT (st.button) --- */
         div.stButton > button {{ 
-            min-height: 3.2em !important; 
-            border-radius: 15px !important; 
-            font-weight: 700 !important; 
+            /* Ép kích thước theo biến chung */
+            height: var(--btn-h) !important;
+            min-height: var(--btn-h) !important;
+            max-height: var(--btn-h) !important;
+            border-radius: var(--btn-radius) !important;
+            padding: var(--btn-padding) !important;
+            
+            /* Font chữ & Màu sắc */
+            font-size: var(--btn-font) !important;
+            font-weight: 700 !important;
             background-color: {theme['btn_bg']}; 
             border: 2px solid {theme['border']} !important; 
             color: {theme['btn_text']} !important; 
-            width: 100%; transition: all 0.2s ease;
-            box-shadow: 0 2px 0px rgba(0,0,0,0.05);
-            outline: none !important;
             
-            /* [QUAN TRỌNG] Padding chuẩn của nút thật */
-            padding: 0.5rem 1rem !important; 
+            width: 100%;
+            box-shadow: 0 2px 0px rgba(0,0,0,0.05);
+            transition: all 0.1s ease;
+            outline: none !important;
         }}
         
-        div.stButton > button p {{ font-size: 20px !important; margin: 0 !important; line-height: 1.4 !important; }}
-
-        /* Sidebar nhỏ lại */
-        section[data-testid="stSidebar"] div.stButton > button {{
-            min-height: auto !important; padding: 0.5em 1em !important; font-size: 16px !important; margin-top: 10px !important;
+        div.stButton > button p {{ 
+            font-size: var(--btn-font) !important; 
+            line-height: 1.2 !important; 
+            margin: 0 !important; 
         }}
 
-        /* --- 5. HÀNH VI CHUỘT / CẢM ỨNG --- */
+        /* --- 6. XỬ LÝ HOVER (GIỮ TÍNH NĂNG FIX ĐIỆN THOẠI) --- */
+        
+        /* Trên máy tính (Có chuột) -> Có hiệu ứng nổi lên */
         @media (hover: hover) {{
             div.stButton > button:hover {{ 
                 background-color: {theme['btn_hover']} !important; 
-                color: {theme['text']} !important;
                 transform: translateY(-2px); 
                 box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
             }}
         }}
 
+        /* Trên điện thoại (Cảm ứng) -> Fix lỗi dính màu */
         @media (hover: none) {{
             div.stButton > button:hover, div.stButton > button:focus {{ 
                 background-color: {theme['btn_bg']} !important; 
                 color: {theme['btn_text']} !important; 
                 border-color: {theme['border']} !important; 
-                box-shadow: 0 2px 0px rgba(0,0,0,0.05) !important;
                 transform: none !important;
+                box-shadow: 0 2px 0px rgba(0,0,0,0.05) !important;
             }}
             div.stButton > button:active {{ 
                 background-color: {theme['btn_hover']} !important; 
                 transform: scale(0.96); 
-                transition: transform 0.1s;
             }}
         }}
 
-        /* --- 6. THANH TIẾN ĐỘ --- */
-        @keyframes rainbow-move {{ 0% {{ background-position: 0% 50%; }} 50% {{ background-position: 100% 50%; }} 100% {{ background-position: 0% 50%; }} }}
-        div[data-testid="stProgress"] > div > div > div > div {{
-            background: linear-gradient(90deg, #FF0000, #FF7F00, #FFFF00, #00FF00, #0000FF, #4B0082, #9400D3, #FF0000) !important;
-            background-size: 400% 400% !important; border-radius: 10px !important;
-            animation: rainbow-move 4s linear infinite !important;
-            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-        }}
-        div[data-testid="stProgress"] {{ background-color: rgba(0,0,0,0.05) !important; border-radius: 10px !important; padding: 2px !important; }}
-        
-        /* --- 7. [ĐÃ FIX] CLASS NÚT GIẢ (BTN FAKE) --- */
+        /* --- 7. NÚT GIẢ (BTN FAKE) - ÉP GIỐNG HỆT NÚT THẬT --- */
         .btn-fake {{
+            /* Ép kích thước y hệt biến chung */
+            height: var(--btn-h) !important;
+            min-height: var(--btn-h) !important;
+            border-radius: var(--btn-radius) !important;
+            padding: var(--btn-padding) !important;
+            
+            /* Flexbox để căn giữa chữ giống hệt st.button */
             display: flex; align-items: center; justify-content: center;
-            width: 100%; 
-            min-height: 3.2em !important; /* Chiều cao khớp nút thật */
             
-            /* [ĐÃ GIẢM] Padding giảm xuống để bằng nút thật, tránh bị phình ra */
-            padding: 0.5rem 1rem !important; 
-            margin: 5px 0; /* Margin khớp st.button */
-            
-            border-radius: 15px; font-weight: 700; text-align: center;
-            font-size: 20px; line-height: 1.4; /* Line-height khớp nút thật */
-            cursor: default; 
-            border: 2px solid transparent;
-            box-shadow: 0 2px 0px rgba(0,0,0,0.05);
+            /* Style khác */
+            width: 100%;
+            margin-top: 5px; /* Khớp margin mặc định của st.button */
+            margin-bottom: 0px;
+            font-size: var(--btn-font);
+            font-weight: 700;
+            line-height: 1.2;
+            cursor: default;
             
             background-color: {theme['btn_bg']};
             color: {theme['text']};
-            border-color: {theme['border']};
-            
-            /* Đảm bảo kích thước tính cả viền */
-            box-sizing: border-box !important; 
+            border: 2px solid {theme['border']}; /* Viền khớp nút thật */
+            box-shadow: 0 2px 0px rgba(0,0,0,0.05);
+            box-sizing: border-box !important; /* Tính cả viền vào kích thước */
         }}
-        
-        /* KHI ĐÚNG: Chỉ đổi màu */
-        .btn-correct-visual {{
-            animation: turnGreen 0.3s ease forwards !important; 
-        }}
-        
-        /* KHI SAI: Đổi màu + RUNG */
-        .btn-wrong-visual {{
-            animation: turnRed 0.4s ease forwards !important;
-            opacity: 0.9;
-        }}
-        
-        /* CÁC NÚT KHÁC */
+
+        /* Animation cho nút giả */
+        .btn-correct-visual {{ animation: turnGreen 0.3s ease forwards !important; }}
+        .btn-wrong-visual {{ animation: turnRed 0.4s ease forwards !important; opacity: 0.9; }}
         .btn-neutral-visual {{ opacity: 0.5; filter: grayscale(100%); }}
 
-        .combo-text {{ text-align: center; font-size: 1.1em; font-weight: 800; color: #FF4500; margin-bottom: 5px; }}
-        .author-text {{ text-align: center; color: {theme['sub_text']}; font-size: 0.85em; margin-top: 15px; opacity: 0.6; font-style: italic; }}
-        p, label {{ color: {theme['text']} !important; margin-bottom: 0px !important; }}
-        .stCaption {{ color: {theme['sub_text']} !important; }}
+        /* --- 8. CÁC THÀNH PHẦN KHÁC (GIỮ NGUYÊN) --- */
+        
+        /* Sidebar nút nhỏ */
+        section[data-testid="stSidebar"] div.stButton > button {{
+            height: auto !important; min-height: auto !important; padding: 5px 15px !important; font-size: 16px !important;
+        }}
 
+        .main-title {{ font-size: 26px !important; font-weight: 800; color: {theme['text']}; text-align: center; text-transform: uppercase; }}
+        
+        .main-card {{ 
+            background-color: {theme['card_bg']}; border-radius: 20px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08); border-top: 5px solid {theme['border']}; 
+            padding: 10px !important; text-align: center; margin-bottom: 10px; margin-top: 5px;
+            animation: quickFadeZoom 0.3s;
+        }}
+        .main-card h1 {{ color: {theme['text']}; font-size: 2.2em; margin: 0; font-weight: 800; }}
+
+        .result-box {{
+            min-height: 50px; display: flex; align-items: center; justify-content: center;
+            padding: 5px 15px; border-radius: 12px; font-weight: 700; margin-bottom: 10px;
+        }}
+        .result-success {{ background-color: #D1E7DD; color: #0f5132; }}
+        .result-error {{ background-color: #F8D7DA; color: #842029; }}
+        .result-hidden {{ opacity: 0; }}
+
+        /* Cầu vồng */
+        @keyframes rainbow-move {{ 0% {{ background-position: 0% 50%; }} 100% {{ background-position: 100% 50%; }} }}
+        div[data-testid="stProgress"] > div > div > div > div {{
+            background: linear-gradient(90deg, #FF0000, #FFFF00, #00FF00, #0000FF, #FF0000) !important;
+            background-size: 200% 100% !important; animation: rainbow-move 3s linear infinite !important;
+        }}
+        
+        .combo-text {{ text-align: center; font-size: 1.1em; font-weight: 800; color: #FF4500; margin-bottom: 5px; }}
+        .author-text {{ text-align: center; color: {theme['sub_text']}; font-size: 0.8em; opacity: 0.6; margin-top: 20px; }}
+        p, label {{ color: {theme['text']} !important; margin-bottom: 0px !important; }}
+        
         </style>
         """, unsafe_allow_html=True)
