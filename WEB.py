@@ -372,7 +372,7 @@ def show_quiz_area():
                     else:
                         st.markdown(f'<div class="btn-fake btn-neutral-visual">{opt}</div>', unsafe_allow_html=True)
             
-            time.sleep(1.3) 
+            time.sleep(1) 
             generate_new_question()
             st.rerun()
 
