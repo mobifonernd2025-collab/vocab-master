@@ -77,6 +77,15 @@ with st.sidebar:
             
         new_sheet = st.selectbox("Chủ đề:", sheet_names, index=current_idx)
         
+        # --- [TÍNH NĂNG MỚI] HIỆN TỔNG SỐ TỪ ---
+        # Load dữ liệu ngay tại đây để đếm
+        data_for_count = load_data(new_sheet) if new_sheet else []
+        total_words_count = len(data_for_count) if data_for_count else 0
+        
+        # Hiển thị số lượng ngay dưới ô chọn
+        st.caption(f"📊 Tổng số lượng từ: **{total_words_count}**")
+        # ---------------------------------------
+        
         if new_sheet != st.session_state.get('selected_sheet_name'):
             st.session_state.selected_sheet_name = new_sheet
             reset_quiz() 
@@ -84,25 +93,19 @@ with st.sidebar:
             st.rerun()
     else:
         st.warning("⚠️ Không tải được danh sách chủ đề. Hãy thử tải lại trang!")
+        total_words_count = 100 # Giá trị mặc định phòng hờ
 
-    # 3. [TÍNH NĂNG MỚI] CHỌN PHẠM VI HỌC
+    # 3. CHỌN PHẠM VI HỌC
     st.divider()
     use_range = st.toggle("🎯 Học theo phạm vi (Số thứ tự)", key="use_range_mode", on_change=reset_quiz)
-    
-    # Load data tạm để biết max length
-    current_sheet_temp = st.session_state.get('selected_sheet_name', sheet_names[0] if sheet_names else None)
-    data_temp = load_data(current_sheet_temp) if current_sheet_temp else []
-    total_words = len(data_temp) if data_temp else 100
 
     if use_range:
         c_r1, c_r2 = st.columns(2)
         with c_r1:
-            # Nhập số bắt đầu
-            val_start = st.number_input("Từ số:", min_value=1, max_value=total_words, value=st.session_state.range_start, step=1, key="range_input_start")
+            val_start = st.number_input("Từ số:", min_value=1, max_value=total_words_count, value=st.session_state.range_start, step=1, key="range_input_start")
             st.session_state.range_start = val_start
         with c_r2:
-            # Nhập số kết thúc
-            val_end = st.number_input("Đến số:", min_value=val_start, max_value=total_words, value=min(total_words, st.session_state.range_end), step=1, key="range_input_end")
+            val_end = st.number_input("Đến số:", min_value=val_start, max_value=total_words_count, value=min(total_words_count, st.session_state.range_end), step=1, key="range_input_end")
             st.session_state.range_end = val_end
             
         st.caption(f"Đang học: **{val_end - val_start + 1}** từ")
@@ -184,35 +187,32 @@ def generate_new_question():
     if not data or len(data) < 1: return
     
     # 1. XỬ LÝ LỌC THEO PHẠM VI (RANGE)
-    active_pool = data # Mặc định là lấy hết
+    active_pool = data 
     
     if st.session_state.use_range_mode:
-        start_idx = st.session_state.range_start - 1 # Chuyển về index 0
+        start_idx = st.session_state.range_start - 1 
         end_idx = st.session_state.range_end
         
-        # Cắt danh sách theo phạm vi người dùng chọn
-        # Đảm bảo không lỗi index
         start_idx = max(0, start_idx)
         end_idx = min(len(data), end_idx)
         
         if start_idx < end_idx:
             active_pool = data[start_idx:end_idx]
         else:
-            st.warning("Phạm vi chọn không hợp lệ, đang dùng toàn bộ danh sách.")
             active_pool = data
 
     if len(active_pool) == 0:
         st.error("Không tìm thấy từ nào trong phạm vi này!")
         return
 
-    # 2. LỌC TỪ BỊ ẨN (IGNORED)
+    # 2. LỌC TỪ BỊ ẨN
     pool_after_ignore = [d for d in active_pool if d[COL_ENG] not in st.session_state.ignored_words]
     
     if not pool_after_ignore: 
-        st.warning("Bạn đã ẩn hết sạch từ trong phạm vi này rồi! Hãy chọn phạm vi khác hoặc Reset.")
+        st.warning("Bạn đã ẩn hết sạch từ trong phạm vi này rồi!")
         return
 
-    # 3. LỌC LỊCH SỬ GẦN ĐÂY (Để không lặp lại ngay lập tức)
+    # 3. LỌC LỊCH SỬ GẦN ĐÂY
     if len(pool_after_ignore) > 8:
         available_pool = [d for d in pool_after_ignore if d[COL_ENG] not in st.session_state.recent_history]
         if not available_pool: available_pool = pool_after_ignore 
@@ -227,10 +227,8 @@ def generate_new_question():
     else: target = random.choice(available_pool)
 
     # 5. CHỌN ĐÁP ÁN SAI (DISTRACTORS)
-    # Ưu tiên lấy đáp án sai TRONG CÙNG PHẠM VI để học tập trung hơn
     other_candidates = [d for d in active_pool if d != target]
     
-    # Nếu trong phạm vi ít từ quá (ví dụ chọn học 2 từ), thì lấy thêm từ bên ngoài để đủ 4 đáp án
     if len(other_candidates) < 3:
         outside_candidates = [d for d in data if d != target and d not in active_pool]
         other_candidates += outside_candidates
@@ -251,7 +249,6 @@ def generate_new_question():
     st.session_state.start_time = time.time()
 
 def handle_answer(selected_opt):
-    # Fix lỗi None type
     if st.session_state.quiz is None: return
 
     quiz = st.session_state.quiz
@@ -287,7 +284,6 @@ def ignore_current_word():
 # --- GIAO DIỆN CHÍNH ---
 st.markdown(f'<h1 class="main-title">Chủ đề {st.session_state.get("selected_sheet_name", "Loading...")}</h1>', unsafe_allow_html=True)
 
-# Hiển thị thông báo nếu đang dùng chế độ Range
 if st.session_state.use_range_mode:
     st.caption(f"🎯 Đang học từ vựng số **{st.session_state.range_start}** đến **{st.session_state.range_end}**")
 
@@ -375,8 +371,8 @@ def show_quiz_area():
                         st.markdown(f'<div class="btn-fake btn-wrong-visual">{opt}</div>', unsafe_allow_html=True)
                     else:
                         st.markdown(f'<div class="btn-fake btn-neutral-visual">{opt}</div>', unsafe_allow_html=True)
-    
-            time.sleep(3) 
+            
+            time.sleep(1.3) 
             generate_new_question()
             st.rerun()
 
