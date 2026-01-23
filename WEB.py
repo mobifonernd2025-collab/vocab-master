@@ -10,7 +10,7 @@ from config import AUTHOR, COL_ENG, COL_VIE, get_theme, FILE_ID
 from styles import apply_css
 from utils import get_audio_base64, recognize_speech, get_gspread_client, load_data
 
-st.set_page_config(page_title=f"Học từ vựng vjppromax - đại ca {AUTHOR}", page_icon="🌸", layout="centered")
+st.set_page_config(page_title=f"Vocab Master - {AUTHOR}", page_icon="🌸", layout="centered")
 
 # --- KHỞI TẠO STATE ---
 if 'theme_mode' not in st.session_state: st.session_state.theme_mode = "Sakura (Hồng)"
@@ -29,6 +29,11 @@ if 'ignored_words' not in st.session_state: st.session_state.ignored_words = []
 if 'quiz_state' not in st.session_state: st.session_state.quiz_state = "ANSWERING" 
 if 'user_choice' not in st.session_state: st.session_state.user_choice = None
 
+# --- STATE CHO TÍNH NĂNG MỚI (RANGE MODE) ---
+if 'use_range_mode' not in st.session_state: st.session_state.use_range_mode = False
+if 'range_start' not in st.session_state: st.session_state.range_start = 1
+if 'range_end' not in st.session_state: st.session_state.range_end = 30
+
 # --- ÁP DỤNG THEME & CSS ---
 current_theme = get_theme(st.session_state.theme_mode)
 apply_css(current_theme)
@@ -38,11 +43,10 @@ def reset_quiz():
     st.session_state.last_result_msg = None
     st.session_state.combo = 0
 
-# --- [QUAN TRỌNG] HÀM LẤY TÊN SHEET (CÓ CACHE) ---
+# --- HÀM LẤY TÊN SHEET (CÓ CACHE) ---
 @st.cache_data(ttl=3600)
 def get_sheet_names():
     try:
-        # Gọi client bên trong hàm để đảm bảo hoạt động tốt với cache
         client = get_gspread_client()
         if client:
             spreadsheet = client.open_by_key(FILE_ID)
@@ -51,7 +55,6 @@ def get_sheet_names():
     except Exception as e:
         return []
 
-# --- GỌI HÀM ĐỂ LẤY DANH SÁCH ---
 sheet_names = get_sheet_names()
 
 # --- SIDEBAR ---
@@ -80,9 +83,33 @@ with st.sidebar:
             st.session_state.recent_history = [] 
             st.rerun()
     else:
-        st.warning("⚠️ Không tải được danh sách chủ đề (hoặc Google chặn). Hãy thử tải lại trang!")
+        st.warning("⚠️ Không tải được danh sách chủ đề. Hãy thử tải lại trang!")
 
-    # 3. Các cài đặt khác
+    # 3. [TÍNH NĂNG MỚI] CHỌN PHẠM VI HỌC
+    st.divider()
+    use_range = st.toggle("🎯 Học theo phạm vi (Số thứ tự)", key="use_range_mode", on_change=reset_quiz)
+    
+    # Load data tạm để biết max length
+    current_sheet_temp = st.session_state.get('selected_sheet_name', sheet_names[0] if sheet_names else None)
+    data_temp = load_data(current_sheet_temp) if current_sheet_temp else []
+    total_words = len(data_temp) if data_temp else 100
+
+    if use_range:
+        c_r1, c_r2 = st.columns(2)
+        with c_r1:
+            # Nhập số bắt đầu
+            val_start = st.number_input("Từ số:", min_value=1, max_value=total_words, value=st.session_state.range_start, step=1, key="range_input_start")
+            st.session_state.range_start = val_start
+        with c_r2:
+            # Nhập số kết thúc
+            val_end = st.number_input("Đến số:", min_value=val_start, max_value=total_words, value=min(total_words, st.session_state.range_end), step=1, key="range_input_end")
+            st.session_state.range_end = val_end
+            
+        st.caption(f"Đang học: **{val_end - val_start + 1}** từ")
+
+    st.divider()
+
+    # 4. Các cài đặt khác
     st.radio("Chế độ:", ["Anh ➔ Việt", "Việt ➔ Anh", "🗣️ Luyện Phát Âm (Beta)"], key="mode", on_change=reset_quiz)
     auto_play = st.toggle("🔊 Tự động phát âm", value=True)
     use_smart_review = st.checkbox("🧠 Ôn tập thông minh", value=True)
@@ -95,13 +122,12 @@ with st.sidebar:
 
     st.divider()
 
-    # --- [TÍNH NĂNG MỚI] THÊM TỪ / CHỦ ĐỀ ---
+    # --- THÊM TỪ / CHỦ ĐỀ ---
     with st.expander("➕ Thêm Từ / Chủ đề mới"):
         action = st.radio("Bạn muốn làm gì?", ["Thêm từ vựng", "Tạo chủ đề mới"])
         
         if action == "Thêm từ vựng":
             with st.form("add_word_form"):
-                # Mặc định chọn sheet hiện tại
                 default_idx = 0
                 if st.session_state.get('selected_sheet_name') in sheet_names:
                     default_idx = sheet_names.index(st.session_state.selected_sheet_name)
@@ -117,7 +143,7 @@ with st.sidebar:
                         from utils import add_vocabulary 
                         if add_vocabulary(target_sheet, new_en, new_vi):
                             st.success(f"Đã thêm: {new_en}")
-                            st.cache_data.clear() # Xóa cache để cập nhật
+                            st.cache_data.clear()
                             time.sleep(1)
                             st.rerun()
                         else:
@@ -125,7 +151,7 @@ with st.sidebar:
                     else:
                         st.warning("Nhập đủ thông tin nhé!")
 
-        else: # Tạo chủ đề mới
+        else: 
             with st.form("create_topic_form"):
                 new_topic_name = st.text_input("Tên chủ đề mới:")
                 create_submitted = st.form_submit_button("Tạo chủ đề")
@@ -144,7 +170,7 @@ with st.sidebar:
                         st.warning("Chưa nhập tên chủ đề!")
         
     st.divider()
-    st.markdown(f"<div style='text-align: center; color: gray; font-size: 0.9em;'><b>{AUTHOR} MobiFone HighTech</b><br><i>Phiên bản này được viết ra nhờ sự stress khi học từ vựng 😅</i></div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='text-align: center; color: gray; font-size: 0.9em;'><b>{AUTHOR} MobiFone HighTech</b><br><i>Phiên bản Range Mode 🎯</i></div>", unsafe_allow_html=True)
 
 # --- LOAD DATA ---
 current_sheet = st.session_state.get('selected_sheet_name', sheet_names[0] if sheet_names else None)
@@ -155,16 +181,44 @@ def generate_new_question():
     st.session_state.quiz_state = "ANSWERING"
     st.session_state.user_choice = None
     
-    if len(data) < 2: return
+    if not data or len(data) < 1: return
     
-    pool_after_ignore = [d for d in data if d[COL_ENG] not in st.session_state.ignored_words]
-    if not pool_after_ignore: st.warning("Bạn đã ẩn hết sạch từ rồi!"); return
+    # 1. XỬ LÝ LỌC THEO PHẠM VI (RANGE)
+    active_pool = data # Mặc định là lấy hết
+    
+    if st.session_state.use_range_mode:
+        start_idx = st.session_state.range_start - 1 # Chuyển về index 0
+        end_idx = st.session_state.range_end
+        
+        # Cắt danh sách theo phạm vi người dùng chọn
+        # Đảm bảo không lỗi index
+        start_idx = max(0, start_idx)
+        end_idx = min(len(data), end_idx)
+        
+        if start_idx < end_idx:
+            active_pool = data[start_idx:end_idx]
+        else:
+            st.warning("Phạm vi chọn không hợp lệ, đang dùng toàn bộ danh sách.")
+            active_pool = data
 
+    if len(active_pool) == 0:
+        st.error("Không tìm thấy từ nào trong phạm vi này!")
+        return
+
+    # 2. LỌC TỪ BỊ ẨN (IGNORED)
+    pool_after_ignore = [d for d in active_pool if d[COL_ENG] not in st.session_state.ignored_words]
+    
+    if not pool_after_ignore: 
+        st.warning("Bạn đã ẩn hết sạch từ trong phạm vi này rồi! Hãy chọn phạm vi khác hoặc Reset.")
+        return
+
+    # 3. LỌC LỊCH SỬ GẦN ĐÂY (Để không lặp lại ngay lập tức)
     if len(pool_after_ignore) > 8:
         available_pool = [d for d in pool_after_ignore if d[COL_ENG] not in st.session_state.recent_history]
         if not available_pool: available_pool = pool_after_ignore 
     else: available_pool = pool_after_ignore
 
+    # 4. CHỌN TỪ (TARGET)
     target = None
     if use_smart_review:
         weights = [st.session_state.word_weights.get(d[COL_ENG], 50) for d in available_pool]
@@ -172,8 +226,18 @@ def generate_new_question():
         target = random.choices(available_pool, weights=weights, k=1)[0]
     else: target = random.choice(available_pool)
 
-    others = random.sample([d for d in data if d != target], min(3, len(data)-1))
+    # 5. CHỌN ĐÁP ÁN SAI (DISTRACTORS)
+    # Ưu tiên lấy đáp án sai TRONG CÙNG PHẠM VI để học tập trung hơn
+    other_candidates = [d for d in active_pool if d != target]
     
+    # Nếu trong phạm vi ít từ quá (ví dụ chọn học 2 từ), thì lấy thêm từ bên ngoài để đủ 4 đáp án
+    if len(other_candidates) < 3:
+        outside_candidates = [d for d in data if d != target and d not in active_pool]
+        other_candidates += outside_candidates
+        
+    others = random.sample(other_candidates, min(3, len(other_candidates)))
+    
+    # 6. TẠO CÂU HỎI
     if st.session_state.mode == "Anh ➔ Việt":
         q, a = target[COL_ENG], target[COL_VIE]; opts = [d[COL_VIE] for d in others] + [a]
     elif st.session_state.mode == "Việt ➔ Anh":
@@ -181,13 +245,15 @@ def generate_new_question():
     else: q, a = target[COL_ENG], target[COL_VIE]; opts = []
 
     if st.session_state.mode != "🗣️ Luyện Phát Âm (Beta)": random.shuffle(opts)
+    
     st.session_state.quiz = {'q': q, 'a': a, 'opts': opts, 'raw_en': target[COL_ENG]}
     st.session_state.current_audio_b64 = get_audio_base64(target[COL_ENG])
     st.session_state.start_time = time.time()
 
 def handle_answer(selected_opt):
-    if st.session_state.quiz is None:
-        return # Nếu không có dữ liệu câu hỏi thì dừng lại, không làm gì cả
+    # Fix lỗi None type
+    if st.session_state.quiz is None: return
+
     quiz = st.session_state.quiz
     target_word = quiz['raw_en']
     current_weight = st.session_state.word_weights.get(target_word, 10)
@@ -220,6 +286,10 @@ def ignore_current_word():
 
 # --- GIAO DIỆN CHÍNH ---
 st.markdown(f'<h1 class="main-title">Chủ đề {st.session_state.get("selected_sheet_name", "Loading...")}</h1>', unsafe_allow_html=True)
+
+# Hiển thị thông báo nếu đang dùng chế độ Range
+if st.session_state.use_range_mode:
+    st.caption(f"🎯 Đang học từ vựng số **{st.session_state.range_start}** đến **{st.session_state.range_end}**")
 
 @st.fragment
 def show_quiz_area():
@@ -300,13 +370,13 @@ def show_quiz_area():
             for idx, opt in enumerate(quiz['opts']):
                 with (col_1 if idx % 2 == 0 else col_2):
                     if opt == correct_answer:
-                        st.markdown(f'<div class="btn-fake btn-correct-visual">✅ {opt}</div>', unsafe_allow_html=True)
+                        st.markdown(f'<div class="btn-fake btn-correct-visual">{opt}</div>', unsafe_allow_html=True)
                     elif opt == user_choice and opt != correct_answer:
-                        st.markdown(f'<div class="btn-fake btn-wrong-visual">❌ {opt}</div>', unsafe_allow_html=True)
+                        st.markdown(f'<div class="btn-fake btn-wrong-visual">{opt}</div>', unsafe_allow_html=True)
                     else:
                         st.markdown(f'<div class="btn-fake btn-neutral-visual">{opt}</div>', unsafe_allow_html=True)
     
-            time.sleep(1.5) 
+            time.sleep(3) 
             generate_new_question()
             st.rerun()
 
