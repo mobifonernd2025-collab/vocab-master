@@ -77,14 +77,14 @@ with st.sidebar:
             
         new_sheet = st.selectbox("Chủ đề:", sheet_names, index=current_idx)
         
-        # --- [TÍNH NĂNG MỚI] HIỆN TỔNG SỐ TỪ ---
-        # Load dữ liệu ngay tại đây để đếm
+        # Load dữ liệu để đếm tổng số từ
         data_for_count = load_data(new_sheet) if new_sheet else []
         total_words_count = len(data_for_count) if data_for_count else 0
         
-        # Hiển thị số lượng ngay dưới ô chọn
+        # Đảm bảo max_value ít nhất là 1 để tránh lỗi UI
+        ui_max_value = max(1, total_words_count)
+        
         st.caption(f"📊 Tổng số lượng từ: **{total_words_count}**")
-        # ---------------------------------------
         
         if new_sheet != st.session_state.get('selected_sheet_name'):
             st.session_state.selected_sheet_name = new_sheet
@@ -93,22 +93,41 @@ with st.sidebar:
             st.rerun()
     else:
         st.warning("⚠️ Không tải được danh sách chủ đề. Hãy thử tải lại trang!")
-        total_words_count = 100 # Giá trị mặc định phòng hờ
+        total_words_count = 0
+        ui_max_value = 1
 
-    # 3. CHỌN PHẠM VI HỌC
+    # 3. [CHỈNH SỬA] CHỌN PHẠM VI HỌC (DÙNG FORM ĐỂ TRÁNH LỖI)
     st.divider()
     use_range = st.toggle("🎯 Học theo phạm vi (Số thứ tự)", key="use_range_mode", on_change=reset_quiz)
 
     if use_range:
-        c_r1, c_r2 = st.columns(2)
-        with c_r1:
-            val_start = st.number_input("Từ số:", min_value=1, max_value=total_words_count, value=st.session_state.range_start, step=1, key="range_input_start")
-            st.session_state.range_start = val_start
-        with c_r2:
-            val_end = st.number_input("Đến số:", min_value=val_start, max_value=total_words_count, value=min(total_words_count, st.session_state.range_end), step=1, key="range_input_end")
-            st.session_state.range_end = val_end
+        # Dùng st.form để gom nhóm nhập liệu -> Chỉ xử lý khi bấm nút Submit
+        with st.form("range_input_form"):
+            st.write("Nhập khoảng từ vựng muốn học:")
+            c_r1, c_r2 = st.columns(2)
             
-        st.caption(f"Đang học: **{val_end - val_start + 1}** từ")
+            with c_r1:
+                # Nhập số bắt đầu
+                input_start = st.number_input("Từ số:", min_value=1, max_value=ui_max_value, value=st.session_state.range_start, step=1)
+            with c_r2:
+                # Nhập số kết thúc (Để min_value=1 để tránh lỗi crash khi input_start > input_end cũ)
+                input_end = st.number_input("Đến số:", min_value=1, max_value=ui_max_value, value=st.session_state.range_end, step=1)
+            
+            # Nút Submit (OK)
+            submitted = st.form_submit_button("✅ Áp dụng (OK)")
+            
+            if submitted:
+                if input_start > input_end:
+                    st.error("⚠️ Số bắt đầu không được lớn hơn số kết thúc!")
+                else:
+                    # Lưu vào session_state và reset quiz
+                    st.session_state.range_start = input_start
+                    st.session_state.range_end = input_end
+                    reset_quiz()
+                    st.rerun()
+        
+        # Hiển thị trạng thái hiện tại bên ngoài form
+        st.caption(f"Đang cài đặt: **{st.session_state.range_start}** - **{st.session_state.range_end}**")
 
     st.divider()
 
@@ -173,7 +192,7 @@ with st.sidebar:
                         st.warning("Chưa nhập tên chủ đề!")
         
     st.divider()
-    st.markdown(f"<div style='text-align: center; color: gray; font-size: 0.9em;'><b>{AUTHOR} MobiFone HighTech</b><br><i>Phiên bản được đại ca Xuân viết ra lúc sì chét khi học từ vựng :))</i></div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='text-align: center; color: gray; font-size: 0.9em;'><b>{AUTHOR} MobiFone HighTech</b><br><i>Phiên bản Range Mode Fixed 🎯</i></div>", unsafe_allow_html=True)
 
 # --- LOAD DATA ---
 current_sheet = st.session_state.get('selected_sheet_name', sheet_names[0] if sheet_names else None)
@@ -372,7 +391,7 @@ def show_quiz_area():
                     else:
                         st.markdown(f'<div class="btn-fake btn-neutral-visual">{opt}</div>', unsafe_allow_html=True)
             
-            time.sleep(1) 
+            time.sleep(1.3) 
             generate_new_question()
             st.rerun()
 
