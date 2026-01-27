@@ -10,7 +10,7 @@ from config import AUTHOR, COL_ENG, COL_VIE, get_theme, FILE_ID
 from styles import apply_css
 from utils import get_audio_base64, recognize_speech, get_gspread_client, load_data
 
-st.set_page_config(page_title=f"Học từ vựng - {AUTHOR}", page_icon="🌸", layout="centered")
+st.set_page_config(page_title=f"Học từ vựng cùng - {AUTHOR}", page_icon="😔😏", layout="centered")
 
 # --- KHỞI TẠO STATE ---
 if 'theme_mode' not in st.session_state: st.session_state.theme_mode = "Sakura (Hồng)"
