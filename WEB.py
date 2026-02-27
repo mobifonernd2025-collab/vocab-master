@@ -192,7 +192,7 @@ with st.sidebar:
                         st.warning("Chưa nhập tên chủ đề!")
         
     st.divider()
-    st.markdown(f"<div style='text-align: center; color: gray; font-size: 0.9em;'><b>{AUTHOR} MobiFone HighTech</b><br><i>Phiên bản viết ra bởi sự sì chét vch khi học từ vựng của đại ca Xuân</i></div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='text-align: center; color: gray; font-size: 0.9em;'><b>{AUTHOR} MobiFone HighTech</b><br><i>Phiên bản viết ra bởi sự sì chét vch khi học từ vựng của đại ca Xuân Hotline:0382924759</i></div>", unsafe_allow_html=True)
 
 # --- LOAD DATA ---
 current_sheet = st.session_state.get('selected_sheet_name', sheet_names[0] if sheet_names else None)
